@@ -16,11 +16,28 @@ our $UNCAL           = ( 0x1 << 8 );
 our $PROTECTIONCKTS  = ( 0x1 << 11 );
 our $SYMBOLMODE      = ( 0x1 << 12 );
 
+sub outputsON {
+  my $self=shift;
+  my $on=shift;
+
+  my $conn="DISCONNECTED";
+  if ($on != 0) {
+    $conn="CONNECTED";
+  }
+  $self->iwrite(":OUTPUT1:CENTRAL $conn;");
+  $self->iOPC();
+}
+
 sub amplitude_cm {
   my $self = shift;
   my $ampl = shift;
   my $offs = shift;
 
+  if ($offs==0) {
+    $self->iwrite(":OUTPUT1:COUPLING:AC;");
+  } else {
+    $self->iwrite(":OUTPUT1:COUPLING:DC;");
+  }    
   $self->iwrite( sprintf( ":SOUR:VOLT:AMPL %g; OFFS %g", $ampl, $offs ) );
   my $trash = $self->iOPC();
 }
@@ -90,6 +107,55 @@ sub BERtime {
   if ( $res != 0 ) { return (-1); }
   $res = $self->iquery(":FETCH:SENSE1:ERATIO?");
   return ( $res + 0.0 );
+}
+
+sub prbsSet {
+  my $self=shift;
+  my $prbsPatt=shift;
+
+  $self->iwrite(":SENSE1:PATTERN:TRACK 1;");
+  if ($prbsPatt=~/PRB[SN](7|10|11|13|15|23|31)/) {
+    $self->iwrite(":SOURCE1:PATTERN:SELECT $prbsPatt;");
+  } else {
+    $self->throw({err=>"Bad prbs pattern choice"});
+  }
+  my $res=$self->iOPC();
+}
+
+sub clockAmpl_cm {
+  my $self=shift;
+  my $ampl=shift;
+  my $offs=shift;
+
+  if ($offs==0) {
+    $self->iwrite(":OUTPUT2:COUPLING:AC;");
+  } else {
+    $self->iwrite(":OUTPUT2:COUPLING:DC;");
+  }
+  $self->iwrite(sprintf(":SOURCE2:VOLTAGE:LEVEL:IMMEDIATE:OFFSET %g;",$offs));
+  $self->iwrite(sprintf(":SOURCE2:VOLTAGE:LEVEL:IMMEDIATE:AMPLITUDE %g;",$ampl));
+  $self->iOPC();
+}
+
+sub clockRate {
+  my $self=shift;
+  my $freq=shift;
+
+  $self->iwrite(sprintf(":SOURCE9:FREQ:CW %g;",$freq));
+  $self->iwrite(":SOURCE9:OUTPUT:STATE INT;");
+  $self->iOPC();
+}
+
+sub subrateDivisor {
+  my $self=shift;
+  my $div=shift;
+
+  if ($div>=2 && $div<=128) {
+    $self->iwrite(sprintf(":SOURCE5:DIVIDER %d;",$div));
+  } else {
+    $self->throw({err=>"Subrate divisor out of range"});
+  }
+  $self->iOPC();
 }
 
 __PACKAGE__->meta->make_immutable;
