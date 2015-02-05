@@ -110,7 +110,7 @@ sub ireadstb() {
 
 SWITCH: {
     if ( $self->gpib()->isa("VXI11::Client") ) {
-      return ( $self->gpib()->vxi_readstatusbyte() );
+      return ( ($self->gpib()->vxi_readstatusbyte())[1] );
       last(SWITCH);
     }
     if ( $self->gpib()->isa("RPCINST") ) {

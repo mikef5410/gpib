@@ -7,14 +7,54 @@ use namespace::autoclean;
 
 with( 'GPIBWrap', 'Throwable' );    #Use Try::Tiny to catch my errors
 
-our $SYNCLOSS        = ( 0x1 << 10 );
-our $DATALOSS        = (0x1);
-our $CLOCKLOSS       = ( 0x1 << 5 );
-our $PROTDATAIN      = ( 0x1 << 6 );
-our $PROTPGDLYCTRLIN = ( 0x1 << 7 );
-our $UNCAL           = ( 0x1 << 8 );
-our $PROTECTIONCKTS  = ( 0x1 << 11 );
-our $SYMBOLMODE      = ( 0x1 << 12 );
+#Questionable Status Register
+our %QSR = (DATALOSS => 0x1, 
+            CLOCKLOSS       => 0x20,
+            PROTDATAIN      => 0x40,
+            PROTPGDLYCTRLIN => 0x80,
+            UNCAL           => 0x100,
+            SYNCLOSS        => 0x400,
+            PROTECTIONCKTS  => 0x800,
+            SYMBOLMODE      => 0x1000 );
+
+#Status Byte
+our %SB = ( EAV => 0x4,
+            QUES => 0x8,
+            MAV => 0x10,
+            ESB => 0x20,
+            SRQ => 0x40,
+            OPER => 0x80 );
+
+#Operation Status Register
+our %OSR = ( OVERHEAT => 0x8,
+             GATEON => 0x10,
+             GATEABORT => 0x80,
+             BITERR => 0x0100,
+             CLKDATACTR => 0x0800,
+             DATATHRALIGN => 0x1000,
+             AUTOALIGN => 0x2000,
+             ERRLOCCAPTURE => 0x4000,
+             BLOCKCHANGE => 0x8000 );
+
+#Protection Ckts Status Register
+our %PSR = ( DATAOUT => 0x1,
+             CLKOUT => 0x2,
+             TRIGOUT => 0x4,
+             AUXOUT => 0x8 );
+
+#Clock Loss Status Register
+our %CLSR = ( ERRDET => 0x1, PATGEN => 0x2 );
+
+#Standard Event Status Register
+our %SER = ( OPC => 0x1,
+             QYE => 0x4,
+             DDE => 0x8,
+             EXE => 0x10,
+             CME => 0x20,
+             PON => 0x80 );
+
+#Symbol Mode Status Register
+our %SMSR = ( SYMBALIGNLOSS => 0x1, SYMBALIGNDONE => 0x2 );
 
 sub outputsON {
   my $self=shift;
@@ -61,7 +101,7 @@ sub isSynchronized {
 
   my $res;
   $res = $self->iquery(":STATUS:QUESTIONABLE:CONDITION?;");
-  return ( ( $res && $SYNCLOSS ) == 0 );
+  return ( ( $res && $QSR{SYNCLOSS} ) == 0 );
 }
 
 sub gateOn {
@@ -71,7 +111,7 @@ sub gateOn {
   my $res;
   if ( !defined($on) ) {
     $res = $self->iquery(":STATUS:OPERATION:CONDITION?;");
-    return ( ( $res & 0x1 << 4 ) != 0 );
+    return ( ( $res & $OSR{GATEON} ) != 0 );
   } else {
     $on = ( $on != 0 ) ? 1 : 0;
     $self->iwrite(":SENSE1:GATE:STATE $on;");
@@ -86,14 +126,14 @@ sub BERtime {
   my $count = 100;
   my $res;
   $self->iwrite(":SENSE1:GATE:STATE 0;");
-  $self->iwrite(":SENSE1:ERMode BER;:SENSE1:GATE:MODE MAN;");
+  $self->iwrite(":SENSE1:ERMode:MODE BER;:SENSE1:GATE:MODE MAN;");
   $self->iwrite(":SENSE1:GATE:MODE SINGLE;");
   $self->iwrite( sprintf( ":SENSE1:GATE:PERIOD:TIME %d;", $period ) );
 
   do {
     sleep(0.1);
     $res = $self->iquery(":STATUS:QUESTIONABLE:CONDITION?;");
-  } while ( ( $res && $SYNCLOSS ) && ( $count-- > 0 ) );
+  } while ( ( $res && $QSR{SYNCLOSS} ) && ( $count-- > 0 ) );
   return (-1) if ( $count <= 0 );
   $self->iwrite(":SENSE1:GATE:STATE 1;");
   sleep( 0.9 * $period );
@@ -101,7 +141,7 @@ sub BERtime {
   do {
     sleep(1);
     $res = $self->iquery(":STATUS:OPERATION:CONDITION?;");
-  } while ( $res & 0x1 << 4 );    #Gate on?
+  } while ( $res & $OSR{GATEON});    #Gate on?
 
   $res = $self->iquery(":STATUS:QUESTIONABLE:CONDITION?;");
   if ( $res != 0 ) { return (-1); }
@@ -156,6 +196,65 @@ sub subrateDivisor {
     $self->throw({err=>"Subrate divisor out of range"});
   }
   $self->iOPC();
+}
+
+#Dump the error message queue ... use "*CLS" to clear it.
+sub dumpErrors {
+  my $self=shift;
+
+  my @errors=();
+  for (my $j=0;$j<20;$j++) {
+    my $stb=$self->ireadstb();
+    last if (!($stb & $SB{EAV})); #EAV
+    my $res=$self->iquery(":SYST:ERR:NEXT?");
+    if (length($res)) {
+      print("$res\n");
+      push(@errors,$res);
+    } else {
+      last;
+    }
+  }
+  return(\@errors);
+}
+
+sub statDump {
+  my $self=shift;
+
+  my $reg=$self->ireadstb();
+  _dumpBits($reg, \%SB, "Status Byte") if ($reg);
+
+  $reg=$self->iquery("*ESR?");
+  _dumpBits($reg, \%CLSR, "Event Status Register") if ($reg);
+
+  $reg=$self->iquery(":STAT:QUES:COND?");
+  _dumpBits($reg, \%QSR, "Questionable Status Register") if ($reg);
+
+  $reg=$self->iquery(":STAT:OPER:COND?");
+  _dumpBits($reg, \%OSR, "Operation Status Register") if ($reg);
+
+  $reg=$self->iquery(":STAT:PROT:COND?");
+  _dumpBits($reg, \%PSR, "Protection Status Register") if ($reg);
+
+  $reg=$self->iquery(":STAT:CLOSS:COND?");
+  _dumpBits($reg, \%CLSR, "Clock Loss Status Register") if ($reg);
+
+  $reg=$self->iquery(":STAT:SYMB:COND?");
+  _dumpBits($reg, \%SMSR, "Symbol Status Register") if ($reg);
+}
+
+sub _dumpBits($$$) {
+  my $reg = shift;
+  my $fields = shift;
+  my $title = shift;
+
+  my @fnames=();
+  foreach my $bit (sort(keys(%$fields))) {
+    push(@fnames,$bit) if ($reg & $fields->{$bit});
+  }
+  if (scalar(@fnames)) {
+    print($title,":\n");
+    printf("%s\n",join(" | ",@fnames));
+  }
 }
 
 __PACKAGE__->meta->make_immutable;
