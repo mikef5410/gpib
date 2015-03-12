@@ -162,6 +162,18 @@ sub prbsSet {
   my $res=$self->iOPC();
 }
 
+sub prbsSetED {
+  my $self=shift;
+  my $prbsPatt=shift;
+
+  if ($prbsPatt=~/PRB[SN](7|10|11|13|15|23|31)/) {
+    $self->iwrite(":SENSEE1:PATTERN:SELECT $prbsPatt;");
+  } else {
+    $self->throw({err=>"Bad prbs pattern choice"});
+  }
+  my $res=$self->iOPC();
+}
+
 sub clockAmpl_cm {
   my $self=shift;
   my $ampl=shift;
@@ -220,6 +232,7 @@ sub defineStraightPatternFile {
   $self->iwrite(":SOURCE1:PATTERN:UFILE:USE $filename, STRaight;");
   $self->iwrite(":SOURCE1:PATERN:FORMAT:DATA PACKED,1;");
   $self->iwrite(":SOURCE1:PATTERN:UFILE:DATA A, $filename, $patt ;");
+  my $res=$self->iOPC();
 }
 
 sub selectPatternFile {
@@ -231,24 +244,28 @@ sub selectPatternFile {
   }
 
   $self->iwrite(":SOURCE1:PATT:SEL FILENAME, $filename;");
+  my $res=$self->iOPC();
 }
 
 sub sequenceAdvance {
   my $self=shift;
 
   $self->iwrite(":SOURCE1:PATT:SEQ:EVENT ONCE;");
+  my $res=$self->iOPC();
 }
 
 sub sequenceReset {
   my $self=shift;
 
   $self->iwrite(":SOURCE1:PATT:SEQ:EVENT RESUME;");
+  my $res=$self->iOPC();
 }
 
 sub startSequencer {
   my $self=shift;
 
   $self->iwrite(":SOURCE1:PATT:SELECT SEQ;");
+  my $res=$self->iOPC();
 }
 
 #Dump the error message queue ... use "*CLS" to clear it.
