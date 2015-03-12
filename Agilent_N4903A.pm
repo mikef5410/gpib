@@ -233,6 +233,23 @@ sub selectPatternFile {
   $self->iwrite(":SOURCE1:PATT:SEL FILENAME, $filename;");
 }
 
+sub sequenceAdvance {
+  my $self=shift;
+
+  $self->iwrite(":SOURCE1:PATT:SEQ:EVENT ONCE;");
+}
+
+sub sequenceReset {
+  my $self=shift;
+
+  $self->iwrite(":SOURCE1:PATT:SEQ:EVENT RESUME;");
+}
+
+sub startSequencer {
+  my $self=shift;
+
+  $self->iwrite(":SOURCE1:PATT:SELECT SEQ;");
+}
 
 #Dump the error message queue ... use "*CLS" to clear it.
 sub dumpErrors {
