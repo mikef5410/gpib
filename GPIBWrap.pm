@@ -207,7 +207,7 @@ sub itrigger() {
 
 SWITCH: {
     if ( $self->gpib()->isa("VXI11::Client") ) {
-      $self->gpib()->vxi_clear();
+      $self->gpib()->vxi_trigger();
       last(SWITCH);
     }
     if ( $self->gpib()->isa("RPCINST") ) {
