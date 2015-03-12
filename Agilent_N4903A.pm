@@ -198,6 +198,42 @@ sub subrateDivisor {
   $self->iOPC();
 }
 
+sub defineStraightPatternFile {
+  my $self=shift;
+  my $filename=shift;
+  my $patt=shift;  #Packing 1 is the only one that seems to work
+
+  my $size=length($patt);
+
+  my $headerSize=1;
+  $headerSize=2 if ($size > 9);
+  $headerSize=3 if ($size > 99);
+  $headerSize=4 if ($size > 999);
+  $headerSize=5 if ($size > 9999);
+
+  $patt = sprintf("#%d%d%s",$headerSize,$size,$patt);
+  if (! $filename=~/'/) {
+    $filename = "'" . $filename . "'";
+  }
+
+  $self->iwrite(":SENSE1:PATTERN:TRACK ON;");
+  $self->iwrite(":SOURCE1:PATTERN:UFILE:USE $filename, STRaight;");
+  $self->iwrite(":SOURCE1:PATERN:FORMAT:DATA PACKED,1;");
+  $self->iwrite(":SOURCE1:PATTERN:UFILE:DATA A, $filename, $patt ;");
+}
+
+sub selectPatternFile {
+  my $self=shift;
+  my $filename=shift;
+
+  if (! $filename=~/'/) {
+    $filename = "'" . $filename . "'";
+  }
+
+  $self->iwrite(":SOURCE1:PATT:SEL FILENAME, $filename;");
+}
+
+
 #Dump the error message queue ... use "*CLS" to clear it.
 sub dumpErrors {
   my $self=shift;
