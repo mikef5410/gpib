@@ -144,7 +144,7 @@ sub isSynchronized {
   my $self = shift;
 
   my $res;
-  $res = $self->iquery(":STATUS:QUESTIONABLE:CONDITION?;") + 0;
+  $res = $self->iquery(":STATUS:QUESTIONABLE:CONDITION?;");
   return ( ( $res && $QSR{SYNCLOSS} ) == 0 );
 }
 
