@@ -82,11 +82,11 @@ sub amplitude_cm {
   my $self = shift;
   my $ampl = shift;
   my $offs = shift;
-
-  if ( abs($offs) > 3.0 ) { confess("Offset is in volts from -3.0V to 3.0V"); }
-  if ( $ampl < 0 )        { confess("Amplitude is positive in volts!"); }
+ 
+  if ( defined($ampl) && $ampl < 0 )        { confess("Amplitude is positive in volts!"); }
 
   if ( defined($offs) ) {
+    if ( abs($offs) > 3.0 ) { confess("Offset is in volts from -3.0V to 3.0V"); }
     if ( $offs == 0 ) {
       $self->iwrite(":OUTPUT1:COUPLING:AC;");
     } else {
@@ -144,7 +144,7 @@ sub isSynchronized {
   my $self = shift;
 
   my $res;
-  $res = $self->iquery(":STATUS:QUESTIONABLE:CONDITION?;");
+  $res = $self->iquery(":STATUS:QUESTIONABLE:CONDITION?;") + 0;
   return ( ( $res && $QSR{SYNCLOSS} ) == 0 );
 }
 
@@ -223,12 +223,12 @@ sub clockAmpl_cm {
   my $ampl = shift;
   my $offs = shift;
 
-  if ( abs($offs) > 3.0 ) {
-    confess("Clock Offset is in volts from -3.0V to 3.0V");
-  }
-  if ( $ampl < 0 ) { confess("Clock Amplitude is positive in volts!"); }
+  if ( defined($ampl) && $ampl < 0 ) { confess("Clock Amplitude is positive in volts!"); }
 
   if ( defined($offs) ) {
+    if ( abs($offs) > 3.0 ) {
+      confess("Clock Offset is in volts from -3.0V to 3.0V");
+    }
     if ( $offs == 0 ) {
       $self->iwrite(":OUTPUT2:COUPLING:AC;");
     } else {
