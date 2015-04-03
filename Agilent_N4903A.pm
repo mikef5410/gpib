@@ -277,6 +277,10 @@ sub clockRate {
   my $freq = shift;
 
   $self->iwrite( sprintf( ":SOURCE9:FREQ:CW %g;", $freq ) );
+  $self->iwrite( sprintf( ":SENSE1:FREQ:CW %g;", $freq ) );
+  #$self->iwrite( sprintf( ":SENSE2:FREQ:CW %g;", $freq ) );
+  $self->iwrite( ":SENSE2:FREQ:CDR ON;" );
+  $self->iwrite(":SENSE6:MODE INT;");
   $self->iwrite(":SOURCE9:OUTPUT:STATE INT;");
   $self->iOPC();
 }
