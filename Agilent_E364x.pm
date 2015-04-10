@@ -50,7 +50,7 @@ sub channel_on {	# turn on the channels
   my $self	= shift;
 
   	# all or none for this instrument
-  $self->iwrite(":OUTP:STATE ON;");
+  $self->iwrite(":OUTPUT:STATE ON;");
   $self->iOPC();
 
   #
@@ -61,8 +61,8 @@ sub channel_on {	# turn on the channels
 sub channel_off { # turn off the channels
   my $self	= shift;
 
-  return 0	if ( $self->{VIRTUAL} );
-  $self->iwrite(":OUTP:STATE OFF;");
+  #return 0	if ( $self->{VIRTUAL} );
+  $self->iwrite(":OUTPUT:STATE OFF;");
   $self->iOPC();
   #
   return 0;

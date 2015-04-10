@@ -355,6 +355,33 @@ sub startSequencer {
   my $res = $self->iOPC();
 }
 
+sub EDpolarity {
+  my $self = shift;
+  my $pol = shift; #NORMal | INVerted
+
+  if (!defined($pol)) {
+    $pol=$self->iquery(":INPUT1:POLARITY?");
+    return($pol);
+  } else {
+    $self->iwrite(sprintf(":INPUT1:POLARITY %s;",$pol));
+    $self->iOPC();
+  }
+}
+
+sub PGpolarity {
+  my $self = shift;
+  my $pol = shift; #NORMal | INVerted
+
+  if (!defined($pol)) {
+    $pol=$self->iquery(":OUTPUT1:POLARITY?");
+    return($pol);
+  } else {
+    $self->iwrite(sprintf(":OUTPUT1:POLARITY %s;",$pol));
+    $self->iOPC();
+  }
+}
+
+
 #Dump the error message queue ... use "*CLS" to clear it.
 sub dumpErrors {
   my $self = shift;
