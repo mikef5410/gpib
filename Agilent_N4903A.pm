@@ -82,11 +82,15 @@ sub amplitude_cm {
   my $self = shift;
   my $ampl = shift;
   my $offs = shift;
- 
-  if ( defined($ampl) && $ampl < 0 )        { confess("Amplitude is positive in volts!"); }
+
+  if ( defined($ampl) && $ampl < 0 ) {
+    confess("Amplitude is positive in volts!");
+  }
 
   if ( defined($offs) ) {
-    if ( abs($offs) > 3.0 ) { confess("Offset is in volts from -3.0V to 3.0V"); }
+    if ( abs($offs) > 3.0 ) {
+      confess("Offset is in volts from -3.0V to 3.0V");
+    }
     if ( $offs == 0 ) {
       $self->iwrite(":OUTPUT1:COUPLING:AC;");
     } else {
@@ -223,7 +227,9 @@ sub clockAmpl_cm {
   my $ampl = shift;
   my $offs = shift;
 
-  if ( defined($ampl) && $ampl < 0 ) { confess("Clock Amplitude is positive in volts!"); }
+  if ( defined($ampl) && $ampl < 0 ) {
+    confess("Clock Amplitude is positive in volts!");
+  }
 
   if ( defined($offs) ) {
     if ( abs($offs) > 3.0 ) {
@@ -277,9 +283,10 @@ sub clockRate {
   my $freq = shift;
 
   $self->iwrite( sprintf( ":SOURCE9:FREQ:CW %g;", $freq ) );
-  $self->iwrite( sprintf( ":SENSE1:FREQ:CW %g;", $freq ) );
+  $self->iwrite( sprintf( ":SENSE1:FREQ:CW %g;",  $freq ) );
+
   #$self->iwrite( sprintf( ":SENSE2:FREQ:CW %g;", $freq ) );
-  $self->iwrite( ":SENSE2:FREQ:CDR ON;" );
+  $self->iwrite(":SENSE2:FREQ:CDR ON;");
   $self->iwrite(":SENSE6:MODE INT;");
   $self->iwrite(":SOURCE9:OUTPUT:STATE INT;");
   $self->iOPC();
@@ -357,30 +364,37 @@ sub startSequencer {
 
 sub EDpolarity {
   my $self = shift;
-  my $pol = shift; #NORMal | INVerted
+  my $pol  = shift;    #NORMal | INVerted
 
-  if (!defined($pol)) {
-    $pol=$self->iquery(":INPUT1:POLARITY?");
-    return($pol);
+  if ( !defined($pol) ) {
+    $pol = $self->iquery(":INPUT1:POLARITY?");
+    return ($pol);
   } else {
-    $self->iwrite(sprintf(":INPUT1:POLARITY %s;",$pol));
+    $self->iwrite( sprintf( ":INPUT1:POLARITY %s;", $pol ) );
     $self->iOPC();
   }
 }
 
 sub PGpolarity {
   my $self = shift;
-  my $pol = shift; #NORMal | INVerted
+  my $pol  = shift;    #NORMal | INVerted
 
-  if (!defined($pol)) {
-    $pol=$self->iquery(":OUTPUT1:POLARITY?");
-    return($pol);
+  if ( !defined($pol) ) {
+    $pol = $self->iquery(":OUTPUT1:POLARITY?");
+    return ($pol);
   } else {
-    $self->iwrite(sprintf(":OUTPUT1:POLARITY %s;",$pol));
+    $self->iwrite( sprintf( ":OUTPUT1:POLARITY %s;", $pol ) );
     $self->iOPC();
   }
 }
 
+#Return BER over last 100ms
+sub instantaneousBER {
+  my $self = shift;
+
+  my $ret = $self->iquery(":FETCH:SENSE1:ERATION:ALL:FULL:DELTA?");
+  return ($ret);
+}
 
 #Dump the error message queue ... use "*CLS" to clear it.
 sub dumpErrors {

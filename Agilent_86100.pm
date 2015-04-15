@@ -155,7 +155,7 @@ sub Clear_Display {
   my ($self) = shift;
 
   # Run
-  $self->iwrite(':CDIS');
+  $self->iwrite(':CDIS;');
 
   return 0;
 
