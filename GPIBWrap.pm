@@ -40,6 +40,9 @@ sub iwrite($) {
   my $self = shift;
   my $arg  = shift;
 
+  chomp($arg);
+  chomp($arg);
+  $arg .= "\n";
 SWITCH: {
     if ( $self->gpib()->isa("VXI11::Client") ) {
       $self->gpib()->vxi_write($arg);
@@ -81,7 +84,14 @@ sub iquery() {
 
 sub iOPC() {
   my $self = shift;
-  return ( $self->iquery("*OPC?") );
+  my $ret;
+
+  while(1) {
+    $ret=$self->iquery("*OPC?");
+    last if ($self->reason() != 0);
+    sleep(1);
+  };
+  return ( $ret & 0x1 );
 }
 
 sub id() {

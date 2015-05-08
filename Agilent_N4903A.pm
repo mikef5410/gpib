@@ -66,6 +66,14 @@ our %SER = (
 #Symbol Mode Status Register
 our %SMSR = ( SYMBALIGNLOSS => 0x1, SYMBALIGNDONE => 0x2 );
 
+#Try to make sure we don't leave a lock hanging around.
+sub DEMOLISH {
+  my $self=shift;
+
+  $self->iunlock();
+  return;
+}
+
 sub outputsON {
   my $self = shift;
   my $on   = shift;
