@@ -5,8 +5,6 @@ use namespace::autoclean;
 
 with( 'GPIBWrap', 'Throwable' );    #Use Try::Tiny to catch my errors
 
-########################################################
-# The following methods override those inherited from DC
 
 sub init {
   my $self      = shift;

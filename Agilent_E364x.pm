@@ -8,10 +8,6 @@ with( 'GPIBWrap', 'Throwable' );    #Use Try::Tiny to catch my errors
 has 'Vsign' => (is =>'rw', default=>1);
 has 'Isign' => (is =>'rw', default=>1);
 
-
-########################################################
-# The following methods override those inherited from DC
-
 sub init {
 	# initialize for use as a dc resource
   my $self	= shift;
