@@ -241,7 +241,7 @@ sub Run_Until_Results {
     $res = $self->iread();
 
     @val = split /\)\,/, $res;    # split on weird boundary
-          # typical bad result is like "Rise time(3),9.99999E+37,..."
+                                  # typical bad result is like "Rise time(3),9.99999E+37,..."
 
     $check = 0;
     for (@val) {
@@ -251,10 +251,10 @@ sub Run_Until_Results {
     #print "check is $check for count $count\n";
     last unless $check;
 
-    $count += 10;    # try 10 more measurements
+    $count += 10;                 # try 10 more measurements
     last if ( $count > $quit );
 
-    $self->Run();    # start measuring again
+    $self->Run();                 # start measuring again
     $self->Run_Until( 'WAV', $count );
   }
 
@@ -1155,9 +1155,7 @@ sub Cal {
     $self->iwrite(":CAL:MOD:VERT $module");    # Send INSTR cmmnd
     $self->iwrite(":CAL:MOD:CONT");            # Send INSTR cmmnd
 
-    unless ( 'yes' eq
-      cal_recall_query( $query, 'Skip Calibration of the DCA modules?' ) )
-    {
+    unless ( 'yes' eq cal_recall_query( $query, 'Skip Calibration of the DCA modules?' ) ) {
 
       CalModule( $self, 'LMOD' )
         if ( 'yes' eq yesno('Calibrate the LEFT module now?') );
@@ -1612,8 +1610,7 @@ sub Ch_Range {
   my ($ch)    = shift;    # Store incoming string
   my ($value) = shift;    # Store incoming string
 
-  $value =
-    sprintf( "%.3e", $value * 10 * 5 / 6.25 );    # Another scope wierdness...
+  $value = sprintf( "%.3e", $value * 10 * 5 / 6.25 );    # Another scope wierdness...
 
   $self->iwrite( ":CHAN" . "$ch" . ":RANGE $value" );
 
@@ -1863,7 +1860,7 @@ sub Save_Image {
   my ($area)     = shift || "SCR";            # Store screen by default
   my ($image)    = shift || "INV";            # NORMal/INVert/MONochrome
 
-  $area = ( $area =~ /grat/i ? "GRAT" : "SCR" );  # RegEx to clean up user param
+  $area = ( $area =~ /grat/i ? "GRAT" : "SCR" );    # RegEx to clean up user param
   $image = (
     $image =~ /norm/i
     ? "NORM"
@@ -1917,8 +1914,8 @@ sub Save_GIF {
   $self->iwrite(":DISPlay:DATA? GIF");
   my ($term_maxcnt) = 50000;                        # Give RPCINST bigger val
   my ($img)         = $self->iread($term_maxcnt);
-  $img =~ s/^#(\d)//g;     # How many digit specify length?
-  $img =~ s/^\d{$1}//g;    # Remove these digits
+  $img =~ s/^#(\d)//g;                              # How many digit specify length?
+  $img =~ s/^\d{$1}//g;                             # Remove these digits
 
   open( FILE, ">$filename" ) || die "Couldn't open $filename!  $!\n";
   print FILE $img;
@@ -2018,10 +2015,10 @@ sub PWD {    # Disk operaiton
 ###############################################################################
 sub Date {
   my ($self)        = shift;
-  my (@system_time) = localtime(time);               # Get 9 fields of time info
-  my ($day)         = shift || $system_time[3];      # Day
-  my ($month)       = shift || $system_time[4] + 1;  # Month
-  my ($year) = shift || $system_time[5] + 1900;      # Year
+  my (@system_time) = localtime(time);                    # Get 9 fields of time info
+  my ($day)         = shift || $system_time[3];           # Day
+  my ($month)       = shift || $system_time[4] + 1;       # Month
+  my ($year)        = shift || $system_time[5] + 1900;    # Year
 
   $self->iwrite(":SYST:DATE $day,$month,$year");
   $self->iwrite(":SYST:DATE?");
@@ -2179,7 +2176,7 @@ sub Histogram_Window {
       $offset = $self->iread();              # Read INSTR response
       $offset += $position;                  # Relative position change
       $command = (":HIST:WIND:$edge $offset");    # write command
-           #print "Histogram_Window using relative $edge position: $offset\n";
+                                                  #print "Histogram_Window using relative $edge position: $offset\n";
     } else {
       $command = (":HIST:WIND:$edge $position");    # write command
     }
@@ -2189,7 +2186,7 @@ sub Histogram_Window {
     $command = (":HIST:WIND:$edge $position");      # write command
   }
 
-#print "HIST:WIND: command is >$command< for edge: $edge position: $position\n";
+  #print "HIST:WIND: command is >$command< for edge: $edge position: $position\n";
   $self->iwrite($command);                          # Send command
 
   return 0;
@@ -2282,7 +2279,7 @@ sub Get_Waveform_Preamble {
   # this gets the preamble for the selected waveform memory
 
   my $self = shift;    # instrument handle
-       #my $source	= shift;    # optional argument for :WAV:SOUR argument
+                       #my $source	= shift;    # optional argument for :WAV:SOUR argument
 
   my ( $raw_preamble, $preamble, @fields );
 
@@ -2295,8 +2292,8 @@ sub Get_Waveform_Preamble {
 
   #print "raw_preamble:\n", $raw_preamble, "\n\n";
 
-  $preamble = {};                        # origin of the preamble hash
-  @fields = split /,/, $raw_preamble;    # split preamble fields
+  $preamble                          = {};                          # origin of the preamble hash
+  @fields                            = split /,/, $raw_preamble;    # split preamble fields
   $preamble->{'format'}              = shift @fields;
   $preamble->{'type'}                = shift @fields;
   $preamble->{'points'}              = shift @fields;
@@ -2878,8 +2875,8 @@ sub Jitter_Start {
 #=dev
 sub Meas_Result {
   my ($self) = shift;
-  my ($ch)   = shift;  # Note channel to take meas on
-                       #my @par = (@_);			# remaining params are parameter names
+  my ($ch)   = shift;    # Note channel to take meas on
+                         #my @par = (@_);			# remaining params are parameter names
   my %val;
 
   if ( defined($ch) ) {
@@ -2933,7 +2930,7 @@ sub Meas_Result {
       n_samp  => shift @data,
     };
 
-#print "$hk has n_samp of ", $val{ $hk }->{ name }, $val{ $hk }->{ n_samp }, "\n";
+    #print "$hk has n_samp of ", $val{ $hk }->{ name }, $val{ $hk }->{ n_samp }, "\n";
   }
 
   return \%val;    # Return to value user

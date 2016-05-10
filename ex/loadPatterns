@@ -10,20 +10,22 @@ use VXI11::Client;
 use Agilent_N4903A;
 use Try::Tiny;
 
-our $langpib="mf2050";
-our $jbertAddr="hpib,14";
-#vxi_startinterruptserver();
-our $jbertIF=vxi_open(address=>$langpib, device=>$jbertAddr);
-our $jbert=Agilent_N4903A->new(gpib=>$jbertIF);
+our $langpib   = "mf2050";
+our $jbertAddr = "hpib,14";
 
-my $name=$jbert->id();
+#vxi_startinterruptserver();
+our $jbertIF = vxi_open( address => $langpib, device => $jbertAddr );
+our $jbert = Agilent_N4903A->new( gpib => $jbertIF );
+
+my $name = $jbert->id();
 print("$name\n");
+
 #$jbert->autoAlign();
 #$jbert->iwrite(":SENSE1:GATE:STATE 1;");
 
-
 #Define a 512-bit 0101 pattern.
-my $fname=q('C:\N4903A\Pattern\Alt01_512.ptrn');
+my $fname = q('C:\N4903A\Pattern\Alt01_512.ptrn');
+
 #$jbert->iwrite(":SENSE1:PATTERN:TRACK ON;");
 #$jbert->iwrite(":SOURCE1:PATTERN:UFILE:USE $fname, STRaight;");
 #$jbert->iwrite(":SOURCE1:PATERN:FORMAT:DATA PACKED,1;");
@@ -36,10 +38,9 @@ my $fname=q('C:\N4903A\Pattern\Alt01_512.ptrn');
 #$jbert->iwrite(":SOURCE1:PATERN:FORMAT:DATA PACKED,1;");
 #$jbert->iwrite(":SOURCE1:PATTERN:UFILE:DATA A, $fname, #3512"."10"x256 . " ;");
 
-
-my $onezeroPattFile=q(C:\N4903A\Pattern\Alt01_512.ptrn);
-my $seqfile=q('C:\N4903A\Sequences\Test1.seq');
-my $seq=<<"EoF";
+my $onezeroPattFile = q(C:\N4903A\Pattern\Alt01_512.ptrn);
+my $seqfile         = q('C:\N4903A\Sequences\Test1.seq');
+my $seq             = <<"EoF";
 (Version= 1.0; Start= IMM; Description= "BCDR train then PRBS31"; Block 1= P0, 1024, TrigOff; Block 2= $onezeroPattFile; Block 3= PRBS31, 1024; Loop= B1,B1,Man; Loop= B3,B3,INF);
 EoF
 
@@ -50,6 +51,5 @@ $jbert->iwrite(":SOURCE1:PATT:SEQ:EVENT RESUME;");
 
 #:SOURCE1:PATT:SEQ:EVENT ONCE advances from Block1 to Block2
 #:SOURCE1:PATT:SEQ:EVENT RESUME restarts from Block1
-
 
 exit;

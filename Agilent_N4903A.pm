@@ -68,7 +68,7 @@ our %SMSR = ( SYMBALIGNLOSS => 0x1, SYMBALIGNDONE => 0x2 );
 
 #Try to make sure we don't leave a lock hanging around.
 sub DEMOLISH {
-  my $self=shift;
+  my $self = shift;
 
   $self->iunlock();
   return;
@@ -252,20 +252,16 @@ sub clockAmpl_cm {
 
 SW: {
     if ( defined($offs) && defined($ampl) ) {
-      $self->iwrite(
-        sprintf( ":SOURCE2:VOLTAGE:LEVEL:IMMEDIATE:OFFSET %g;", $offs ) );
-      $self->iwrite(
-        sprintf( ":SOURCE2:VOLTAGE:LEVEL:IMMEDIATE:AMPLITUDE %g;", $ampl ) );
+      $self->iwrite( sprintf( ":SOURCE2:VOLTAGE:LEVEL:IMMEDIATE:OFFSET %g;",    $offs ) );
+      $self->iwrite( sprintf( ":SOURCE2:VOLTAGE:LEVEL:IMMEDIATE:AMPLITUDE %g;", $ampl ) );
       last SW;
     }
     if ( defined($offs) && !defined($ampl) ) {
-      $self->iwrite(
-        sprintf( ":SOURCE2:VOLTAGE:LEVEL:IMMEDIATE:OFFSET %g;", $offs ) );
+      $self->iwrite( sprintf( ":SOURCE2:VOLTAGE:LEVEL:IMMEDIATE:OFFSET %g;", $offs ) );
       last SW;
     }
     if ( !defined($offs) && defined($ampl) ) {
-      $self->iwrite(
-        sprintf( ":SOURCE2:VOLTAGE:LEVEL:IMMEDIATE:AMPLITUDE %g;", $ampl ) );
+      $self->iwrite( sprintf( ":SOURCE2:VOLTAGE:LEVEL:IMMEDIATE:AMPLITUDE %g;", $ampl ) );
       last SW;
     }
   }

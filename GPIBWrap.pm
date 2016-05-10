@@ -5,6 +5,7 @@ package GPIBWrap;
 #use Moose;
 #use namespace::autoclean;
 use Moose::Role;
+use Time::HiRes qw(sleep usleep);
 
 with 'Throwable';    #Use Try::Tiny to catch my errors
 
@@ -19,8 +20,8 @@ sub ilock() {
   my $self = shift;
   my $wait = shift;
 
-  return if (!defined($self));
-  return if (!defined($self->gpib));
+  return if ( !defined($self) );
+  return if ( !defined( $self->gpib ) );
 
 SWITCH: {
     if ( $self->gpib()->isa("VXI11::Client") ) {
@@ -43,8 +44,8 @@ sub iwrite($) {
   my $self = shift;
   my $arg  = shift;
 
-  return if (!defined($self));
-  return if (!defined($self->gpib));
+  return if ( !defined($self) );
+  return if ( !defined( $self->gpib ) );
 
   chomp($arg);
   chomp($arg);
@@ -65,8 +66,8 @@ SWITCH: {
 sub iread() {
   my $self = shift;
 
-  return if (!defined($self));
-  return if (!defined($self->gpib));
+  return if ( !defined($self) );
+  return if ( !defined( $self->gpib ) );
 
 SWITCH: {
     if ( $self->gpib()->isa("VXI11::Client") ) {
@@ -87,42 +88,55 @@ sub iquery() {
   my $self = shift;
   my $arg  = shift;
 
-  return if (!defined($self));
-  return if (!defined($self->gpib));
+  return if ( !defined($self) );
+  return if ( !defined( $self->gpib ) );
 
   $self->iwrite($arg);
   return ( $self->iread() );
 }
 
 sub iOPC() {
-  my $self = shift;
+  my $self    = shift;
+  my $timeout = shift;    #seconds (fractional ok)
   my $ret;
 
+  return if ( !defined($self) );
+  return if ( !defined( $self->gpib ) );
 
-  return if (!defined($self));
-  return if (!defined($self->gpib));
+  #Poll STB for operation complete until timeout
+  if ( defined($timeout) ) {
+    while ( $timeout > 0 ) {
+      $ret = $self->iquery("*STB?");
+      if ( $ret & ( 1 << 5 ) ) {
+        return (1);
+      }
+      usleep( ( $timeout > 1.0 ) ? 1e6 : $timeout * 1e6 );
+      $timeout = $timeout - 1.0;
+    }
+    return (-1);
+  }
 
-  while(1) {
-    $ret=$self->iquery("*OPC?");
-    last if ($self->reason() != 0);
+  while (1) {
+    $ret = $self->iquery("*OPC?");
+    last if ( $self->reason() != 0 );
     sleep(1);
-  };
+  }
   return ( $ret & 0x1 );
 }
 
 sub id() {
   my $self = shift;
 
-  return if (!defined($self));
-  return if (!defined($self->gpib));
+  return if ( !defined($self) );
+  return if ( !defined( $self->gpib ) );
   return ( $self->iquery("*IDN?") );
 }
 
 sub icreate_intr_chan() {
   my $self = shift;
 
-  return if (!defined($self));
-  return if (!defined($self->gpib));
+  return if ( !defined($self) );
+  return if ( !defined( $self->gpib ) );
 
 SWITCH: {
     if ( $self->gpib()->isa("VXI11::Client") ) {
@@ -140,12 +154,12 @@ SWITCH: {
 sub ireadstb() {
   my $self = shift;
 
-  return if (!defined($self));
-  return if (!defined($self->gpib));
+  return if ( !defined($self) );
+  return if ( !defined( $self->gpib ) );
 
 SWITCH: {
     if ( $self->gpib()->isa("VXI11::Client") ) {
-      return ( ($self->gpib()->vxi_readstatusbyte())[1] );
+      return ( ( $self->gpib()->vxi_readstatusbyte() )[1] );
       last(SWITCH);
     }
     if ( $self->gpib()->isa("RPCINST") ) {
@@ -160,8 +174,8 @@ sub ienablesrq($) {
   my $self   = shift;
   my $handle = shift;
 
-  return if (!defined($self));
-  return if (!defined($self->gpib));
+  return if ( !defined($self) );
+  return if ( !defined( $self->gpib ) );
 
 SWITCH: {
     if ( $self->gpib()->isa("VXI11::Client") ) {
@@ -179,8 +193,8 @@ SWITCH: {
 sub iwai() {
   my $self = shift;
 
-  return if (!defined($self));
-  return if (!defined($self->gpib));
+  return if ( !defined($self) );
+  return if ( !defined( $self->gpib ) );
 
 SWITCH: {
     if ( $self->gpib()->isa("VXI11::Client") ) {
@@ -198,8 +212,8 @@ SWITCH: {
 sub idestroy_intr_chan() {
   my $self = shift;
 
-  return if (!defined($self));
-  return if (!defined($self->gpib));
+  return if ( !defined($self) );
+  return if ( !defined( $self->gpib ) );
 
 SWITCH: {
     if ( $self->gpib()->isa("VXI11::Client") ) {
@@ -217,8 +231,8 @@ SWITCH: {
 sub iabort() {
   my $self = shift;
 
-  return if (!defined($self));
-  return if (!defined($self->gpib));
+  return if ( !defined($self) );
+  return if ( !defined( $self->gpib ) );
 
 SWITCH: {
     if ( $self->gpib()->isa("VXI11::Client") ) {
@@ -236,8 +250,8 @@ SWITCH: {
 sub iclear() {
   my $self = shift;
 
-  return if (!defined($self));
-  return if (!defined($self->gpib));
+  return if ( !defined($self) );
+  return if ( !defined( $self->gpib ) );
 SWITCH: {
     if ( $self->gpib()->isa("VXI11::Client") ) {
       $self->gpib()->vxi_clear();
@@ -254,8 +268,8 @@ SWITCH: {
 sub itrigger() {
   my $self = shift;
 
-  return if (!defined($self));
-  return if (!defined($self->gpib));
+  return if ( !defined($self) );
+  return if ( !defined( $self->gpib ) );
 SWITCH: {
     if ( $self->gpib()->isa("VXI11::Client") ) {
       $self->gpib()->vxi_trigger();
@@ -272,8 +286,8 @@ SWITCH: {
 sub ilocal() {
   my $self = shift;
 
-  return if (!defined($self));
-  return if (!defined($self->gpib));
+  return if ( !defined($self) );
+  return if ( !defined( $self->gpib ) );
 SWITCH: {
     if ( $self->gpib()->isa("VXI11::Client") ) {
       $self->gpib()->vxi_local();
@@ -290,9 +304,9 @@ SWITCH: {
 sub iremote() {
   my $self = shift;
 
-  return if (!defined($self));
-  return if (!defined($self->gpib));
- SWITCH: {
+  return if ( !defined($self) );
+  return if ( !defined( $self->gpib ) );
+SWITCH: {
     if ( $self->gpib()->isa("VXI11::Client") ) {
       $self->gpib()->vxi_remote();
       last(SWITCH);
@@ -308,9 +322,9 @@ sub iremote() {
 sub iunlock() {
   my $self = shift;
 
-  return if (!defined($self));
-  return if (!defined($self->gpib));
- SWITCH: {
+  return if ( !defined($self) );
+  return if ( !defined( $self->gpib ) );
+SWITCH: {
     if ( $self->gpib()->isa("VXI11::Client") ) {
       $self->gpib()->vxi_unlock();
       last(SWITCH);
@@ -326,8 +340,8 @@ sub iunlock() {
 sub iclose() {
   my $self = shift;
 
-  return if (!defined($self));
-  return if (!defined($self->gpib));
+  return if ( !defined($self) );
+  return if ( !defined( $self->gpib ) );
 SWITCH: {
     if ( $self->gpib()->isa("VXI11::Client") ) {
       $self->gpib()->vxi_close();

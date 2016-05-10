@@ -6,19 +6,19 @@ use namespace::autoclean;
 with( 'GPIBWrap', 'Throwable' );    #Use Try::Tiny to catch my errors
 
 sub init {
-  my $self      = shift;
+  my $self = shift;
 
-  return 0      if ( $self->{VIRTUAL} );
+  return 0 if ( $self->{VIRTUAL} );
 
   $self->iconnect();
-  $self->iwrite("*RST;") if ($self->{RESET}); #Get us to default state
+  $self->iwrite("*RST;") if ( $self->{RESET} );    #Get us to default state
 
-  my $err = 'x';    # seed for first iteration
-  # clear any accumulated errors
-  while( $err ) {
+  my $err = 'x';                                   # seed for first iteration
+                                                   # clear any accumulated errors
+  while ($err) {
     $self->iwrite(":SYST:ERR?");
-    $err    = $self->iread( 100, 1000 );
-    last if ($err =~/\+0/);         # error 0 means buffer is empty
+    $err = $self->iread( 100, 1000 );
+    last if ( $err =~ /\+0/ );                     # error 0 means buffer is empty
   }
   $self->iwrite("*CLS;");
   #
@@ -27,23 +27,23 @@ sub init {
 }
 
 sub SetupSA {
-  my($self)=shift;
+  my ($self) = shift;
 
-  my($fa)=shift;	# start frequency hertz
-  my($fb)=shift;	# stop frequency hertz
-  my($rl)=shift;	# reference level dbm
-  my($au)=shift;	# absolute amplitude units string
-  my($rb)=shift;	# resolution bandwidth hertz 
-  my($vb)=shift;	# video bandwidth hertz 
-  my($st)=shift;	# sweep time seconds
-  my($lg)=shift;	# linear (if==0) or dB per div (if>0) 
+  my ($fa) = shift;                                # start frequency hertz
+  my ($fb) = shift;                                # stop frequency hertz
+  my ($rl) = shift;                                # reference level dbm
+  my ($au) = shift;                                # absolute amplitude units string
+  my ($rb) = shift;                                # resolution bandwidth hertz
+  my ($vb) = shift;                                # video bandwidth hertz
+  my ($st) = shift;                                # sweep time seconds
+  my ($lg) = shift;                                # linear (if==0) or dB per div (if>0)
 
-  if ($lg < 0) {
-	  Carp("You've asked for negative dB per division.");
-	  return();
+  if ( $lg < 0 ) {
+    Carp("You've asked for negative dB per division.");
+    return ();
   }
 
-  my $fr    = $self->{ FreqRef };   # 10MHz ref
+  my $fr = $self->{FreqRef};                       # 10MHz ref
 
   #$self->iwrite("FREF $fr;");	    # EXT or INT
 
@@ -53,25 +53,25 @@ sub SetupSA {
   $self->iwrite(":UNIT:POWer $au");
   $self->iwrite(":DISPlay:WINDow:TRACe:Y:SCALe:RLEVel $rl");
 
-  if ( 'auto' eq lc( $rb ) ) {
+  if ( 'auto' eq lc($rb) ) {
     $self->iwrite(':SENSe:BANDwidth:RESolution:AUTO ON');
   } else {
     $self->iwrite(":SENSe:BANDwidth:RESolution $rb");
   }
 
-  if ( 'auto' eq lc( $vb ) ) {
+  if ( 'auto' eq lc($vb) ) {
     $self->iwrite(':SENSe:BANDwidth:VIDeo:AUTO ON');
   } else {
     $self->iwrite(":SENSe:BANDwidth:VIDeo $vb");
   }
 
-  if ( 'auto' eq lc( $st ) ) {
+  if ( 'auto' eq lc($st) ) {
     $self->iwrite(':SENse:SWEep:TIME:AUTO ON');
   } else {
     $self->iwrite(":SENse:SWEep:TIME $st");
   }
 
-  $self->iwrite(':DISPlay:WINDow:TRACe:Y:SCALe:SPACing LINear') if ($lg == 0);
+  $self->iwrite(':DISPlay:WINDow:TRACe:Y:SCALe:SPACing LINear') if ( $lg == 0 );
   if ( $lg > 0 ) {
     $self->iwrite(':DISPlay:WINDow:TRACe:Y:SCALe:SPACing LOGarithmic');
     $self->iwrite(":DISPlay:WINDow:TRACe:Y:SCALe:PDIVision $lg");
@@ -79,29 +79,26 @@ sub SetupSA {
 
   # The following state attributes are issued to insure that Setup creates
   # a known state. It may be necessary to add more as time goes on...
-  $self->iwrite(':TRACe1:MODE WRITe');		# No max hold
-  $self->iwrite(':SENSe:AVERage:STATe OFF');	# No averaging
+  $self->iwrite(':TRACe1:MODE WRITe');          # No max hold
+  $self->iwrite(':SENSe:AVERage:STATe OFF');    # No averaging
 
   $self->iOPC();
 
-
-  if ( $st eq 'auto' ) {	# need to determine the actual sweep time
-	# video averaging is not supported in this code
-	# no obvious way to determine if it is on or off!
-	# so turn it off...
-	$self->iwrite(':SENse:SWEep:TIME?');
-  	$sweeptime	= $self->iread();	# Read INSTR response & Store
-  	chomp($sweeptime);			# Remove trailing newline
+  if ( $st eq 'auto' ) {                        # need to determine the actual sweep time
+                                                # video averaging is not supported in this code
+                                                # no obvious way to determine if it is on or off!
+                                                # so turn it off...
+    $self->iwrite(':SENse:SWEep:TIME?');
+    $sweeptime = $self->iread();                # Read INSTR response & Store
+    chomp($sweeptime);                          # Remove trailing newline
 
   } else {
-  	$sweeptime=$st;		# use the time provided
+    $sweeptime = $st;                           # use the time provided
   }
-
 
   #hold( "at end of setupsa" );
   return 0;
 }
-
 
 __PACKAGE__->meta->make_immutable;
 1;
