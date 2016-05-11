@@ -220,7 +220,7 @@ This code will poll every second for the Operation Complete bit in the ESR, thus
 
 sub iOPC {
   my $self    = shift;
-  my $timeout = shift;    #seconds (fractional ok)
+  my $timeout = shift || 0;    #seconds (fractional ok)
   my $ret;
 
   return if ( !defined($self) );
@@ -230,7 +230,7 @@ sub iOPC {
   $self->iwrite("*OPC;");
 
   #Poll STB for operation complete until timeout
-  if ( defined($timeout) ) {
+  if ( $timeout ) {
     timeout $timeout => sub {
       while ( $timeout > 0 ) {
         $ret = $self->iquery("*ESR?") || 0;
@@ -247,6 +247,7 @@ sub iOPC {
     }
   }
 
+  #No timeout case ...
   while (1) {
     $ret = $self->iquery("*ESR?") || 0;
     if ( $ret & (0x1) ) {
