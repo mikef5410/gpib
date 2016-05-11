@@ -6,8 +6,10 @@ package GPIBWrap;
 #use namespace::autoclean;
 use Moose::Role;
 use Time::HiRes qw(sleep usleep);
+use Carp;
 
 with 'Throwable';    #Use Try::Tiny to catch my errors
+with 'MooseX::Log::Log4perl';
 
 has 'gpib'       => ( is => 'rw', required => 1 );
 has 'bytes_read' => ( is => 'ro', default  => 0 );
@@ -22,6 +24,7 @@ sub ilock() {
 
   return if ( !defined($self) );
   return if ( !defined( $self->gpib ) );
+  $self->log('GPIBWrap.IOTrace')->info( sprintf( "ilock %s", $wait ) );
 
 SWITCH: {
     if ( $self->gpib()->isa("VXI11::Client") ) {
@@ -46,6 +49,7 @@ sub iwrite($) {
 
   return if ( !defined($self) );
   return if ( !defined( $self->gpib ) );
+  $self->log('GPIBWrap.IOTrace')->info( sprintf( "iwrite %s", $arg ) );
 
   chomp($arg);
   chomp($arg);
@@ -73,6 +77,7 @@ SWITCH: {
     if ( $self->gpib()->isa("VXI11::Client") ) {
       ( $self->{bytes_read}, my $in, $self->{reason} ) =
         $self->gpib()->vxi_read();
+      $self->log('GPIBWrap.IOTrace')->info( sprintf( "iread -> %s", $in ) );
       return ($in);
       last(SWITCH);
     }
@@ -90,6 +95,7 @@ sub iquery() {
 
   return if ( !defined($self) );
   return if ( !defined( $self->gpib ) );
+  $self->log('GPIBWrap.IOTrace')->info( sprintf( "iquery %s", $arg ) );
 
   $self->iwrite($arg);
   return ( $self->iread() );
@@ -102,6 +108,7 @@ sub iOPC() {
 
   return if ( !defined($self) );
   return if ( !defined( $self->gpib ) );
+  $self->log('GPIBWrap.IOTrace')->info( sprintf( "iOPC %g", $timeout ) );
 
   $self->iwrite("*OPC;");
 
@@ -136,6 +143,7 @@ sub id() {
 
   return if ( !defined($self) );
   return if ( !defined( $self->gpib ) );
+  $self->log('GPIBWrap.IOTrace')->info( sprintf("id") );
   return ( $self->iquery("*IDN?") );
 }
 
@@ -144,6 +152,7 @@ sub icreate_intr_chan() {
 
   return if ( !defined($self) );
   return if ( !defined( $self->gpib ) );
+  $self->log('GPIBWrap.IOTrace')->info( sprintf("icreate_intr_chan") );
 
 SWITCH: {
     if ( $self->gpib()->isa("VXI11::Client") ) {
@@ -163,10 +172,13 @@ sub ireadstb() {
 
   return if ( !defined($self) );
   return if ( !defined( $self->gpib ) );
+  my $rval = 0;
 
 SWITCH: {
     if ( $self->gpib()->isa("VXI11::Client") ) {
-      return ( ( $self->gpib()->vxi_readstatusbyte() )[1] );
+      $rval = ( $self->gpib()->vxi_readstatusbyte() )[1];
+      $self->log('GPIBWrap.IOTrace')->info( sprintf( "ireadstb -> 0x%x", $rval ) );
+      return ($rval);
       last(SWITCH);
     }
     if ( $self->gpib()->isa("RPCINST") ) {
@@ -183,6 +195,7 @@ sub ienablesrq($) {
 
   return if ( !defined($self) );
   return if ( !defined( $self->gpib ) );
+  $self->log('GPIBWrap.IOTrace')->info( sprintf( "ienablesrq %s", $handle ) );
 
 SWITCH: {
     if ( $self->gpib()->isa("VXI11::Client") ) {
@@ -202,6 +215,7 @@ sub iwai() {
 
   return if ( !defined($self) );
   return if ( !defined( $self->gpib ) );
+  $self->log('GPIBWrap.IOTrace')->info( sprintf("iwai") );
 
 SWITCH: {
     if ( $self->gpib()->isa("VXI11::Client") ) {
@@ -221,6 +235,7 @@ sub idestroy_intr_chan() {
 
   return if ( !defined($self) );
   return if ( !defined( $self->gpib ) );
+  $self->log('GPIBWrap.IOTrace')->info( sprintf("idestroy_intr_chan") );
 
 SWITCH: {
     if ( $self->gpib()->isa("VXI11::Client") ) {
@@ -240,6 +255,7 @@ sub iabort() {
 
   return if ( !defined($self) );
   return if ( !defined( $self->gpib ) );
+  $self->log('GPIBWrap.IOTrace')->info( sprintf("iabort") );
 
 SWITCH: {
     if ( $self->gpib()->isa("VXI11::Client") ) {
@@ -259,6 +275,8 @@ sub iclear() {
 
   return if ( !defined($self) );
   return if ( !defined( $self->gpib ) );
+  $self->log('GPIBWrap.IOTrace')->info( sprintf("iclear") );
+
 SWITCH: {
     if ( $self->gpib()->isa("VXI11::Client") ) {
       $self->gpib()->vxi_clear();
@@ -277,6 +295,8 @@ sub itrigger() {
 
   return if ( !defined($self) );
   return if ( !defined( $self->gpib ) );
+  $self->log('GPIBWrap.IOTrace')->info( sprintf("itrigger") );
+
 SWITCH: {
     if ( $self->gpib()->isa("VXI11::Client") ) {
       $self->gpib()->vxi_trigger();
@@ -295,6 +315,8 @@ sub ilocal() {
 
   return if ( !defined($self) );
   return if ( !defined( $self->gpib ) );
+  $self->log('GPIBWrap.IOTrace')->info( sprintf("ilocal") );
+
 SWITCH: {
     if ( $self->gpib()->isa("VXI11::Client") ) {
       $self->gpib()->vxi_local();
@@ -313,6 +335,8 @@ sub iremote() {
 
   return if ( !defined($self) );
   return if ( !defined( $self->gpib ) );
+  $self->log('GPIBWrap.IOTrace')->info( sprintf("iremote") );
+
 SWITCH: {
     if ( $self->gpib()->isa("VXI11::Client") ) {
       $self->gpib()->vxi_remote();
@@ -331,6 +355,8 @@ sub iunlock() {
 
   return if ( !defined($self) );
   return if ( !defined( $self->gpib ) );
+  $self->log('GPIBWrap.IOTrace')->info( sprintf("iunlock") );
+
 SWITCH: {
     if ( $self->gpib()->isa("VXI11::Client") ) {
       $self->gpib()->vxi_unlock();
@@ -349,6 +375,8 @@ sub iclose() {
 
   return if ( !defined($self) );
   return if ( !defined( $self->gpib ) );
+  $self->log('GPIBWrap.IOTrace')->info( sprintf("iclose") );
+
 SWITCH: {
     if ( $self->gpib()->isa("VXI11::Client") ) {
       $self->gpib()->vxi_close();
@@ -360,6 +388,33 @@ SWITCH: {
     }
     $self->throw( { err => 'Unknown GPIB transport' } );
   }
+}
+
+sub isQuery {
+  my $self = shift;
+  my $str  = shift;
+
+  chomp($str);
+  chomp($str);
+  if ( $str =~ /\?;?\s*$/ ) {
+    return (1);
+  } else {
+    return (0);
+  }
+}
+
+sub getErrors {
+  my $self = shift;
+
+  my @errlist = ();
+  my $res     = "";
+  while (1) {
+    $res = $self->iquery(":SYSTem:ERRor:NEXT?");
+    chomp($res);
+    last if ( $res =~ /0,/ );
+    push( @errlist, $res );
+  }
+  return ( \@errlist );
 }
 
 1;
