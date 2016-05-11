@@ -7,6 +7,7 @@ package GPIBWrap;
 #use namespace::autoclean;
 use Moose::Role;
 use Time::HiRes qw(sleep usleep);
+use Time::Out qw(timeout);
 use Carp;
 
 ## no critic (BitwiseOperators)
@@ -230,15 +231,20 @@ sub iOPC {
 
   #Poll STB for operation complete until timeout
   if ( defined($timeout) ) {
-    while ( $timeout > 0 ) {
-      $ret = $self->iquery("*ESR?") || 0;
-      if ( $ret & (0x1) ) {
-        return (1);
+    timeout $timeout => sub {
+      while ( $timeout > 0 ) {
+        $ret = $self->iquery("*ESR?") || 0;
+        if ( $ret & (0x1) ) {
+          return (1);
+        }
+        usleep( ( $timeout > 1.0 ) ? 1e6 : $timeout * 1e6 );
+        $timeout = $timeout - 1.0;
       }
-      usleep( ( $timeout > 1.0 ) ? 1e6 : $timeout * 1e6 );
-      $timeout = $timeout - 1.0;
+      return (-1);
+    };
+    if ($@) {
+      return (-1);
     }
-    return (-1);
   }
 
   while (1) {
