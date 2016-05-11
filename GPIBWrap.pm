@@ -103,9 +103,10 @@ sub iOPC() {
   return if ( !defined($self) );
   return if ( !defined( $self->gpib ) );
 
+  $self->iwrite("*OPC;");
+
   #Poll STB for operation complete until timeout
   if ( defined($timeout) ) {
-    $self->iwrite("*OPC;");
     while ( $timeout > 0 ) {
       $ret = $self->iquery("*ESR?") || 0;
       if ( $ret & (0x1) ) {
@@ -118,9 +119,14 @@ sub iOPC() {
   }
 
   while (1) {
-    $ret = $self->iquery("*OPC?") || 0;
-    last if ( $self->reason() != 0 );
-    sleep(1);
+    $ret = $self->iquery("*ESR?") || 0;
+    if ( $ret & (0x1) ) {
+      return (1);
+    }
+
+    #$ret = $self->iquery("*OPC?") || 0;
+    #last if ( $self->reason() != 0 );
+    #sleep(1);
   }
   return ( $ret & 0x1 );
 }
