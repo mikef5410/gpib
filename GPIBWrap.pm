@@ -9,15 +9,17 @@ use Moose::Role;
 use Time::HiRes qw(sleep usleep);
 use Time::Out qw(timeout);
 use Carp;
+use Module::Runtime qw(use_module use_package_optimistically);
 
 ## no critic (BitwiseOperators)
 
 with 'Throwable';    #Use Try::Tiny to catch my errors
 with 'MooseX::Log::Log4perl';
 
-has 'gpib'       => ( is => 'rw', required => 1 );
-has 'bytes_read' => ( is => 'ro', default  => 0 );
-has 'reason'     => ( is => 'ro', default  => 0 );
+has 'gpib'          => ( is => 'rw', default => undef );
+has 'bytes_read'    => ( is => 'ro', default => 0 );
+has 'reason'        => ( is => 'ro', default => 0 );
+has 'connectString' => ( is => 'rw', default => '' );
 
 # This class wraps a variety of underlying GPIB mechanisms into a
 # common API
@@ -67,6 +69,11 @@ C<Log::Log4perl-E<gt>get_logger("GPIBWrap.IOTrace")-E<gt>level($INFO);>
 
 =item *
 
+B<connectString> - How to connect to the device, ex: "VXI11::host::instr0"
+  or "VXI11::host::hpib,12" or "SICL::host::hpib,12" where host is an IPv4 address or hostname
+
+=item *
+
 B<gpib> - The underlying GPIB interface object for this device
 
 =item *
@@ -79,6 +86,39 @@ B<reason> - Reason the read terminated
 
 
 =back
+
+=cut
+
+sub BUILD {
+  my $self = shift;
+  my $args = shift;
+
+  if ( !length( $self->{connectString} ) ) { return; }
+
+  #Connection string can be VXI11::host::instr0
+  #or VXI11::host::hpib,12 or SICL::host::hpib,12
+  my $cs = $self->{connectString};
+  my ( $proto, $host, $target ) = split( '::', $cs );
+  if ( !defined($target) || length($target) == 0 ) {
+    $target = "inst0";
+  }
+
+  if ( $proto =~ /VXI11/i ) {
+    use_module("VXI11::Client");
+    VXI11::Client->import();
+    $self->gpib( VXI11::Client::vxi_open( address => $host, device => $target ) );
+    return;
+  }
+
+  if ( $proto =~ /SICL/i ) {
+    use_module("RPCINST");
+    RPCINST->import();
+    $self->gpib( RPCINST->new( $host, $target ) );
+    $self->gpib()->iconnect();
+    return;
+  }
+  return;
+}
 
 =head2 METHODS
 
@@ -144,7 +184,7 @@ SWITCH: {
       last(SWITCH);
     }
     if ( $self->gpib()->isa("RPCINST") ) {
-      $self->throw( { err => '"RPCINST" not implemented' } );
+      $self->gpib()->iwrite($arg);
       last(SWITCH);
     }
     $self->throw( { err => 'Unknown GPIB transport' } );
@@ -176,7 +216,9 @@ SWITCH: {
       last(SWITCH);
     }
     if ( $self->gpib()->isa("RPCINST") ) {
-      $self->throw( { err => '"RPCINST" not implemented' } );
+      my $in = $self->gpib()->iread();
+      $self->log('GPIBWrap.IOTrace')->info( sprintf( "iread -> %s", $in ) );
+      return ($in);
       last(SWITCH);
     }
     $self->throw( { err => 'Unknown GPIB transport' } );
@@ -219,8 +261,8 @@ This code will poll every second for the Operation Complete bit in the ESR, thus
 =cut
 
 sub iOPC {
-  my $self    = shift;
-  my $timeout = shift || 0;     #seconds (fractional ok)
+  my $self = shift;
+  my $timeout = shift || 0;    #seconds (fractional ok)
   my $ret;
 
   return if ( !defined($self) );
@@ -230,27 +272,27 @@ sub iOPC {
   $self->iwrite("*OPC;");
 
   #Poll STB for operation complete until timeout
-  if ( $timeout ) {
+  if ($timeout) {
     while ( $timeout > 0 ) {
-      $ret=0;
+      $ret = 0;
       $self->iwrite("*ESR?");
-      for (my $j=0; $j<5; $j++) {
+      for ( my $j = 0 ; $j < 5 ; $j++ ) {
         my $stb = $self->ireadstb();
-        if ($stb & 1<<4) {      #There's an answer ...
+        if ( $stb & 1 << 4 ) {    #There's an answer ...
           $ret = $self->iread() || 0;
-          return(1) if ($ret & 0x1);
+          return (1) if ( $ret & 0x1 );
           last;
         }
-        usleep(250e3); #250msec
-      }                         #for loop
+        usleep(250e3);            #250msec
+      }    #for loop
       if ( $ret & (0x1) ) {
         return (1);
       }
       usleep( ( $timeout > 1.0 ) ? 1e6 : $timeout * 1e6 );
       $timeout = $timeout - 1.0;
-    }                           #While timeout
+    }    #While timeout
     return (-1);
-  } #If timeout
+  }    #If timeout
 
   #No timeout case ...
   while (1) {
@@ -340,7 +382,9 @@ SWITCH: {
       last(SWITCH);
     }
     if ( $self->gpib()->isa("RPCINST") ) {
-      $self->throw( { err => '"RPCINST" not implemented' } );
+      $rval = $self->gpib()->istatus();
+      $self->log('GPIBWrap.IOTrace')->info( sprintf( "ireadstb -> 0x%x", $rval ) );
+      return ($rval);
       last(SWITCH);
     }
     $self->throw( { err => 'Unknown GPIB transport' } );
@@ -491,7 +535,7 @@ SWITCH: {
       last(SWITCH);
     }
     if ( $self->gpib()->isa("RPCINST") ) {
-      $self->throw( { err => '"RPCINST" not implemented' } );
+      $self->gpib()->iclear();
       last(SWITCH);
     }
     $self->throw( { err => 'Unknown GPIB transport' } );
@@ -521,7 +565,7 @@ SWITCH: {
       last(SWITCH);
     }
     if ( $self->gpib()->isa("RPCINST") ) {
-      $self->throw( { err => '"RPCINST" not implemented' } );
+      $self->gpib()->itrigger();
       last(SWITCH);
     }
     $self->throw( { err => 'Unknown GPIB transport' } );
@@ -551,7 +595,7 @@ SWITCH: {
       last(SWITCH);
     }
     if ( $self->gpib()->isa("RPCINST") ) {
-      $self->throw( { err => '"RPCINST" not implemented' } );
+      $self->gpib()->ilocal();
       last(SWITCH);
     }
     $self->throw( { err => 'Unknown GPIB transport' } );
@@ -581,7 +625,7 @@ SWITCH: {
       last(SWITCH);
     }
     if ( $self->gpib()->isa("RPCINST") ) {
-      $self->throw( { err => '"RPCINST" not implemented' } );
+      $self->gpib()->iremote();
       last(SWITCH);
     }
     $self->throw( { err => 'Unknown GPIB transport' } );
@@ -611,7 +655,7 @@ SWITCH: {
       last(SWITCH);
     }
     if ( $self->gpib()->isa("RPCINST") ) {
-      $self->throw( { err => '"RPCINST" not implemented' } );
+      $self->gpib()->iunlock();
       last(SWITCH);
     }
     $self->throw( { err => 'Unknown GPIB transport' } );
@@ -641,7 +685,7 @@ SWITCH: {
       last(SWITCH);
     }
     if ( $self->gpib()->isa("RPCINST") ) {
-      $self->throw( { err => '"RPCINST" not implemented' } );
+      $self->gpib()->idisconnect();
       last(SWITCH);
     }
     $self->throw( { err => 'Unknown GPIB transport' } );
