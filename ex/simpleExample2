@@ -1,0 +1,26 @@
+#!/usr/bin/perl
+#
+use strict;
+
+#Where to find our library and auxiliary code.
+use lib "..";
+use lib $ENV{PERL_GPIB} || "/projects/gpib";
+
+use Log::Log4perl qw(:easy);    #Log4perl can be used to trace GPIB I/O
+use Generic_Instrument;
+
+Log::Log4perl->easy_init($ERROR);
+
+#my $cs ="VXI11::10.13.50.25::inst0"; #Direct to lan on instrument
+#my $cs ="SICL::10.64.9.73::hpib,18"; #SICL lan-hpib box, address 18 on bus
+my $cs = "VXI11::10.64.9.73::hpib,18";    #VXI-11 lan-hpib box adress 18 on bus
+
+my $sg = Generic_Instrument->new( connectString => $cs );
+
+#Optionally turn on GPIB IO trace
+#Log::Log4perl->get_logger("GPIBWrap.IOTrace")->level($INFO);
+
+my $id = $sg->iquery("*IDN?");
+print "$id\n";
+$sg->ilocal();
+exit;

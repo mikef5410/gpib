@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 #
 # Controlling an instrument without a driver (object)...
-
+use strict;
 
 #Where to find our library and auxiliary code.
 use lib "..";
@@ -9,27 +9,27 @@ use lib $ENV{PERL_GPIB} || "/projects/gpib";
 
 use VXI11::Client;
 use GPIBWrap;
+use Log::Log4perl qw(:easy);    #Log4perl can be used to trace GPIB I/O
 use Generic_Instrument;
 
 #Get a conenction to the instrument...
 # this is a little clunky. I need to streamline it a little.
-my $iface =vxi_open(address=>"10.13.50.25", device=>"inst0");
-my $sg = Generic_Instrument->new(gpib=>$iface);
+my $iface = vxi_open( address => "10.13.50.25", device => "inst0" );
+my $sg = Generic_Instrument->new( gpib => $iface );
 
 # iquery is the same as iwrite, followed by iread
-my $id=$sg->iquery("*IDN?");
+my $id = $sg->iquery("*IDN?");
 print "$id\n";
 
 # iwrite ... send a command
 $sg->iwrite(":SOURCE:FREQUENCY:CW 155.52MHz;");
-$sg->iOPC(); #Wait for operation to complete
+$sg->iOPC();    #Wait for operation to complete
 $sg->iwrite(":POWER 0dBm;");
 
 #here's another way to query ... send the command and read the response
 $sg->iwrite(":SOURCE:FREQUENCY:CW?");
 my $f = $sg->iread();
-print $f,"\n";
-
+print $f, "\n";
 
 #return the front panel to local control
 $sg->ilocal();
