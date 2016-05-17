@@ -105,12 +105,14 @@ sub BUILD {
 
   if ( $proto =~ /VXI11/i ) {
     use_module("VXI11::Client");
+    VXI11::Client->import();
     $self->gpib( VXI11::Client::vxi_open( address => $host, device => $target ) );
     return;
   }
 
   if ( $proto =~ /SICL/i ) {
     use_module("RPCINST");
+    RPCINST->import();
     $self->gpib( RPCINST->new( $host, $target ) );
     $self->gpib()->iconnect();
     return;
