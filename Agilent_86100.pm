@@ -4,6 +4,12 @@ package Agilent_86100;
 use Moose;
 use namespace::autoclean;
 
+use Time::HiRes qw(sleep);
+
+## no critic (ProhibitTwoArgOpen)
+## no critic (ValuesAndExpressions::ProhibitAccessOfPrivateData)
+## no critic (ProhibitNestedSubs)
+
 with( 'GPIBWrap', 'Throwable' );    #Use Try::Tiny to catch my errors
 
 ###############################################################################
@@ -213,8 +219,10 @@ sub Run_Until {
     $alert = $self->iread();    # Read INSTR response
     chomp($alert);
     last if ( $alert != 0 );    # early exit
-    select( undef, undef, undef, 0.5 );    # Wait half a sec.
-                                           #print "Alert: $alert\n";
+                                #select( undef, undef, undef, 0.5 );    # Wait half a sec.
+    sleep(0.5);
+
+    #print "Alert: $alert\n";
   }
 
   return 0;
@@ -1917,9 +1925,10 @@ sub Save_GIF {
   $img =~ s/^#(\d)//g;                              # How many digit specify length?
   $img =~ s/^\d{$1}//g;                             # Remove these digits
 
-  open( FILE, ">$filename" ) || die "Couldn't open $filename!  $!\n";
-  print FILE $img;
-  close(FILE);
+  my $FILE;
+  open( $FILE, ">$filename" ) || die "Couldn't open $filename!  $!\n";
+  print $FILE $img;
+  close($FILE);
 
 }
 
@@ -2263,7 +2272,8 @@ sub Set_Waveform_Source {
   #$source=$self->iread();
 
   # Must resort to brute force time delay here...?
-  select( undef, undef, undef, 0.5 );    # 0.5 > t > 0.4
+  #select( undef, undef, undef, 0.5 );    # 0.5 > t > 0.4
+  sleep(0.5);
 
   return 0;
 
@@ -2450,34 +2460,34 @@ sub _Block2Integer {
                                                     # express the number
                                                     # of bytes that follow
 
-  my $digit;                                        # holds each digit
-                                                    # of count in turn
+  # $digit;                                        # holds each digit
+  # of count in turn
 
-  my $bytecount;                                    # the assembled
-                                                    # byte count from
-                                                    # the digits
+  my $bytecount;    # the assembled
+                    # byte count from
+                    # the digits
 
-  foreach $digit                                    # construct the
-    ( unpack "xxc$bdigits", $bytebuffer )           # bytecount:
+  foreach my $digit # construct the
+    ( unpack "xxc$bdigits", $bytebuffer )    # bytecount:
   {
     $bytecount .= chr($digit);
-  };                                                # digit by digit
+  };                                         # digit by digit
 
-  my $iveccount = $bytecount / 2;                   # there are 2 bytes
-                                                    # per integer number.
+  my $iveccount = $bytecount / 2;            # there are 2 bytes
+                                             # per integer number.
 
   @$ivec = unpack(
-    "s$iveccount",                                  # iveccount signed
-                                                    # 16-bit integers
-                                                    # presumed LSB-first
+    "s$iveccount",                           # iveccount signed
+                                             # 16-bit integers
+                                             # presumed LSB-first
     substr(
-      $bytebuffer,                                  # ...from the buffer
-      2 + $bdigits,                                 # ...starting at
+      $bytebuffer,                           # ...from the buffer
+      2 + $bdigits,                          # ...starting at
       $bytecount
-      )                                             # ...this long
+      )                                      # ...this long
   );
 
-  return 0;                                         # success
+  return 0;                                  # success
 }
 
 sub Get_Waveform_Data {
@@ -2562,11 +2572,11 @@ sub Get_Waveform_Data {
 
     # organize the vector into the 2x2 array, cartesian
 
-    my ( $x, $y, $i, $v );
+    my ( $i, $v );
     $i = 0;
-    for $x ( 0 .. 450 ) {
+    for my $x ( 0 .. 450 ) {
       $v = $data->[$x] = [];
-      for $y ( 0 .. 320 ) {
+      for my $y ( 0 .. 320 ) {
         $v->[ 320 - $y ] = $ivec->[ $i++ ];
       }
     }

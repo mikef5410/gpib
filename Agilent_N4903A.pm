@@ -5,6 +5,9 @@ package Agilent_N4903A;
 use Moose;
 use namespace::autoclean;
 
+## no critic (ValuesAndExpressions::ProhibitAccessOfPrivateData)
+## no critic (BitwiseOperators)
+
 with( 'GPIBWrap', 'Throwable' );    #Use Try::Tiny to catch my errors
 
 #Questionable Status Register
