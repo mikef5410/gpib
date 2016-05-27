@@ -285,7 +285,7 @@ sub iOPC {
   $self->log('GPIBWrap.IOTrace')->info( sprintf( "iOPC %g", $timeout ) );
   return if ( !defined( $self->gpib ) );
 
-  $self->iwrite("*OPC;");
+  $self->iwrite("*OPC;"); #Tell the instrument we're interested in OPC
 
   #Poll STB for operation complete until timeout
   if ($timeout) {
@@ -319,7 +319,7 @@ sub iOPC {
 
     #$ret = $self->iquery("*OPC?") || 0;
     #last if ( $self->reason() != 0 );
-    #sleep(1);
+    sleep(1);
   }
   return ( $ret & 0x1 );
 }
