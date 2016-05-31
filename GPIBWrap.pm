@@ -226,13 +226,13 @@ sub iread {
 SWITCH: {
     if ( $self->gpib()->isa("VXI11::Client") ) {
       ( $self->{bytes_read}, my $in, $self->{reason} ) =
-        $self->gpib()->vxi_read();
+        $self->gpib()->vxi_read(@_);
       $self->log('GPIBWrap.IOTrace')->info( sprintf( "iread -> %s", $in ) );
       return ($in);
       last(SWITCH);
     }
     if ( $self->gpib()->isa("RPCINST") ) {
-      my $in = $self->gpib()->iread();
+      my $in = $self->gpib()->iread(@_);
       $self->log('GPIBWrap.IOTrace')->info( sprintf( "iread -> %s", $in ) );
       return ($in);
       last(SWITCH);
