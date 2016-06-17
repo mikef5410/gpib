@@ -1140,49 +1140,49 @@ sub TDR_mode {
 # $dca->Cal( \$DCAcal );
 #
 ###############################################################################
-sub Cal {
-  my ($self) = shift;
+# sub Cal {
+#   my ($self) = shift;
 
-  my ($calset_) = shift;    # Calset output
+#   my ($calset_) = shift;    # Calset output
 
-  my (%args) = ( QUERY => undef, @_ );
+#   my (%args) = ( QUERY => undef, @_ );
 
-  my $query = $args{QUERY};
+#   my $query = $args{QUERY};
 
-  sub CalModule {
-    my $self   = shift;
-    my $module = shift;
+#   sub CalModule {
+#     my $self   = shift;
+#     my $module = shift;
 
-    if ( $module =~ /l/i ) {
-      $module = "LMOD";
-    } else {
-      $module = "RMOD";
-    }
+#     if ( $module =~ /l/i ) {
+#       $module = "LMOD";
+#     } else {
+#       $module = "RMOD";
+#     }
 
-    # Start calibration
-    $self->iwrite(":CAL:MOD:VERT $module");    # Send INSTR cmmnd
-    $self->iwrite(":CAL:MOD:CONT");            # Send INSTR cmmnd
+#     # Start calibration
+#     $self->iwrite(":CAL:MOD:VERT $module");    # Send INSTR cmmnd
+#     $self->iwrite(":CAL:MOD:CONT");            # Send INSTR cmmnd
 
-    unless ( 'yes' eq cal_recall_query( $query, 'Skip Calibration of the DCA modules?' ) ) {
+#     unless ( 'yes' eq cal_recall_query( $query, 'Skip Calibration of the DCA modules?' ) ) {
 
-      CalModule( $self, 'LMOD' )
-        if ( 'yes' eq yesno('Calibrate the LEFT module now?') );
+#       CalModule( $self, 'LMOD' )
+#         if ( 'yes' eq yesno('Calibrate the LEFT module now?') );
 
-      hold('Let me know when its done');
+#       hold('Let me know when its done');
 
-      CalModule( $self, 'RMOD' )
-        if ( 'yes' eq yesno('Calibrate the RIGHT Module now?') );
+#       CalModule( $self, 'RMOD' )
+#         if ( 'yes' eq yesno('Calibrate the RIGHT Module now?') );
 
-      hold('Let me know when its done');
-    }
+#       hold('Let me know when its done');
+#     }
 
-    # create quick and dirty calset...
-    # this should be forward compatible
-    $$calset_ = $self;
+#     # create quick and dirty calset...
+#     # this should be forward compatible
+#     $$calset_ = $self;
 
-    return 0;
-  }
-}
+#     return 0;
+#   }
+# }
 
 ###############################################################################
 #

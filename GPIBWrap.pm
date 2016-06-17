@@ -150,7 +150,7 @@ sub ilock {
   my $wait = shift;
 
   return if ( !defined($self) );
-  $self->log('GPIBWrap.IOTrace')->info( sprintf( "ilock %s", $wait ) );
+  #$self->log('GPIBWrap.IOTrace')->info( sprintf( "ilock %s", $wait ) );
   return if ( !defined( $self->gpib ) );
 
 SWITCH: {
@@ -185,7 +185,7 @@ sub iwrite {
   my $arg  = shift;
 
   return if ( !defined($self) );
-  $self->log('GPIBWrap.IOTrace')->info( sprintf( "iwrite %s", $arg ) );
+  #$self->log('GPIBWrap.IOTrace')->info( sprintf( "iwrite %s", $arg ) );
   return if ( !defined( $self->gpib ) );
 
   chomp($arg);
@@ -219,7 +219,7 @@ sub iread {
 
   return if ( !defined($self) );
   if ( !defined( $self->gpib ) ) {
-    $self->log('GPIBWrap.IOTrace')->info( sprintf("iread") );
+    #$self->log('GPIBWrap.IOTrace')->info( sprintf("iread") );
     return ("");
   }
 
@@ -227,13 +227,13 @@ SWITCH: {
     if ( $self->gpib()->isa("VXI11::Client") ) {
       ( $self->{bytes_read}, my $in, $self->{reason} ) =
         $self->gpib()->vxi_read(@_);
-      $self->log('GPIBWrap.IOTrace')->info( sprintf( "iread -> %s", $in ) );
+      #$self->log('GPIBWrap.IOTrace')->info( sprintf( "iread -> %s", $in ) );
       return ($in);
       last(SWITCH);
     }
     if ( $self->gpib()->isa("RPCINST") ) {
       my $in = $self->gpib()->iread(@_);
-      $self->log('GPIBWrap.IOTrace')->info( sprintf( "iread -> %s", $in ) );
+      #$self->log('GPIBWrap.IOTrace')->info( sprintf( "iread -> %s", $in ) );
       return ($in);
       last(SWITCH);
     }
@@ -256,7 +256,7 @@ sub iquery {
   my $arg  = shift;
 
   return if ( !defined($self) );
-  $self->log('GPIBWrap.IOTrace')->info( sprintf( "iquery %s", $arg ) );
+  #$self->log('GPIBWrap.IOTrace')->info( sprintf( "iquery %s", $arg ) );
   return if ( !defined( $self->gpib ) );
 
   $self->iwrite($arg);
@@ -282,7 +282,7 @@ sub iOPC {
   my $ret;
 
   return if ( !defined($self) );
-  $self->log('GPIBWrap.IOTrace')->info( sprintf( "iOPC %g", $timeout ) );
+  #$self->log('GPIBWrap.IOTrace')->info( sprintf( "iOPC %g", $timeout ) );
   return if ( !defined( $self->gpib ) );
 
   $self->iwrite("*OPC;"); #Tell the instrument we're interested in OPC
@@ -338,7 +338,7 @@ sub id {
   my $self = shift;
 
   return if ( !defined($self) );
-  $self->log('GPIBWrap.IOTrace')->info( sprintf("id") );
+  #$self->log('GPIBWrap.IOTrace')->info( sprintf("id") );
   return if ( !defined( $self->gpib ) );
 
   return ( $self->iquery("*IDN?") );
@@ -358,7 +358,7 @@ sub icreate_intr_chan {
   my $self = shift;
 
   return if ( !defined($self) );
-  $self->log('GPIBWrap.IOTrace')->info( sprintf("icreate_intr_chan") );
+  #$self->log('GPIBWrap.IOTrace')->info( sprintf("icreate_intr_chan") );
   return if ( !defined( $self->gpib ) );
 
 SWITCH: {
@@ -389,7 +389,7 @@ sub ireadstb {
 
   return if ( !defined($self) );
   if ( !defined( $self->gpib ) ) {
-    $self->log('GPIBWrap.IOTrace')->info( sprintf("ireadstb") );
+    #$self->log('GPIBWrap.IOTrace')->info( sprintf("ireadstb") );
     return (0);
   }
   my $rval = 0;
@@ -397,13 +397,13 @@ sub ireadstb {
 SWITCH: {
     if ( $self->gpib()->isa("VXI11::Client") ) {
       $rval = ( $self->gpib()->vxi_readstatusbyte() )[1];
-      $self->log('GPIBWrap.IOTrace')->info( sprintf( "ireadstb -> 0x%x", $rval ) );
+      #$self->log('GPIBWrap.IOTrace')->info( sprintf( "ireadstb -> 0x%x", $rval ) );
       return ($rval);
       last(SWITCH);
     }
     if ( $self->gpib()->isa("RPCINST") ) {
       $rval = $self->gpib()->istatus();
-      $self->log('GPIBWrap.IOTrace')->info( sprintf( "ireadstb -> 0x%x", $rval ) );
+      #$self->log('GPIBWrap.IOTrace')->info( sprintf( "ireadstb -> 0x%x", $rval ) );
       return ($rval);
       last(SWITCH);
     }
@@ -426,7 +426,7 @@ sub ienablesrq {
   my $handle = shift;
 
   return if ( !defined($self) );
-  $self->log('GPIBWrap.IOTrace')->info( sprintf( "ienablesrq %s", $handle ) );
+  #$self->log('GPIBWrap.IOTrace')->info( sprintf( "ienablesrq %s", $handle ) );
   return if ( !defined( $self->gpib ) );
 
 SWITCH: {
@@ -456,7 +456,7 @@ sub iwai {
   my $self = shift;
 
   return if ( !defined($self) );
-  $self->log('GPIBWrap.IOTrace')->info( sprintf("iwai") );
+  #$self->log('GPIBWrap.IOTrace')->info( sprintf("iwai") );
   return if ( !defined( $self->gpib ) );
 
 SWITCH: {
@@ -486,7 +486,7 @@ sub idestroy_intr_chan {
   my $self = shift;
 
   return if ( !defined($self) );
-  $self->log('GPIBWrap.IOTrace')->info( sprintf("idestroy_intr_chan") );
+  #$self->log('GPIBWrap.IOTrace')->info( sprintf("idestroy_intr_chan") );
   return if ( !defined( $self->gpib ) );
 
 SWITCH: {
@@ -516,7 +516,7 @@ sub iabort {
   my $self = shift;
 
   return if ( !defined($self) );
-  $self->log('GPIBWrap.IOTrace')->info( sprintf("iabort") );
+  #$self->log('GPIBWrap.IOTrace')->info( sprintf("iabort") );
   return if ( !defined( $self->gpib ) );
 
 SWITCH: {
@@ -546,7 +546,7 @@ sub iclear {
   my $self = shift;
 
   return if ( !defined($self) );
-  $self->log('GPIBWrap.IOTrace')->info( sprintf("iclear") );
+  #$self->log('GPIBWrap.IOTrace')->info( sprintf("iclear") );
   return if ( !defined( $self->gpib ) );
 
 SWITCH: {
@@ -576,7 +576,7 @@ sub itrigger {
   my $self = shift;
 
   return if ( !defined($self) );
-  $self->log('GPIBWrap.IOTrace')->info( sprintf("itrigger") );
+  #$self->log('GPIBWrap.IOTrace')->info( sprintf("itrigger") );
   return if ( !defined( $self->gpib ) );
 
 SWITCH: {
@@ -606,7 +606,7 @@ sub ilocal {
   my $self = shift;
 
   return if ( !defined($self) );
-  $self->log('GPIBWrap.IOTrace')->info( sprintf("ilocal") );
+  #$self->log('GPIBWrap.IOTrace')->info( sprintf("ilocal") );
   return if ( !defined( $self->gpib ) );
 
 SWITCH: {
@@ -636,7 +636,7 @@ sub iremote {
   my $self = shift;
 
   return if ( !defined($self) );
-  $self->log('GPIBWrap.IOTrace')->info( sprintf("iremote") );
+  #$self->log('GPIBWrap.IOTrace')->info( sprintf("iremote") );
   return if ( !defined( $self->gpib ) );
 
 SWITCH: {
@@ -666,7 +666,7 @@ sub iunlock {
   my $self = shift;
 
   return if ( !defined($self) );
-  $self->log('GPIBWrap.IOTrace')->info( sprintf("iunlock") );
+  #$self->log('GPIBWrap.IOTrace')->info( sprintf("iunlock") );
   return if ( !defined( $self->gpib ) );
 
 SWITCH: {
@@ -696,7 +696,7 @@ sub iclose {
   my $self = shift;
 
   return if ( !defined($self) );
-  $self->log('GPIBWrap.IOTrace')->info( sprintf("iclose") );
+  #$self->log('GPIBWrap.IOTrace')->info( sprintf("iclose") );
   return if ( !defined( $self->gpib ) );
 
 SWITCH: {
