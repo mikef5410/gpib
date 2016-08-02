@@ -1,6 +1,9 @@
 # -*- mode: perl -*-
 package Agilent_ESA;
 use Moose;
+use Trace::SA;
+use PDL;
+
 use namespace::autoclean;
 
 with( 'GPIBWrap', 'Throwable' );    #Use Try::Tiny to catch my errors
@@ -98,6 +101,51 @@ sub SetupSA {
 
   #hold( "at end of setupsa" );
   return 0;
+}
+
+#Suck down an entire trace from an SA
+sub getTRA {
+  my $self = shift;
+
+  my $traceDump = Trace::SA->new();
+
+  $self->iwrite(":FREQ:START?");
+  $traceDump->FA( $self->iread() + 0.0 );
+
+  $self->iwrite(":FREQ:STOP?");
+  $traceDump->FB( $self->iread() + 0.0 );
+
+  $self->iwrite(":DISP:WIND:TRACE:Y:RLEV?");
+  $traceDump->RL( $self->iread() + 0.0 );
+
+  $self->iwrite(":BWID:RES?");
+  $traceDump->RB( $self->iread() + 0.0 );
+
+  $self->iwrite(":BWID:VID?");
+  $traceDump->VB( $self->iread() + 0.0 );
+
+  $self->iwrite(":SWEEP:TIME?");
+  $traceDump->ST( $self->iread() + 0.0 );
+
+  $self->iwrite(":DISP:WIND:TRACE:Y:PDIVision?");
+  $traceDump->LG( $self->iread() + 0.0 );
+
+  $self->iwrite(":UNIT:POWER?");
+  my $res = $self->iread();
+  chomp($res);
+  $traceDump->AUNITS(res);
+
+  $self->iwrite(":FORMAT:TRACE:DATA ASCII;");
+  $self->iwrite(":TRACE:DATA? TRACE1");
+  my $rdg = $self->iread();
+  chomp($rdg);
+  my @rdg = split( ",", $rdg );
+  map { $_ + 0.0 } @rdg;
+  $traceDump->TDATA( pdl(@rdg) );
+
+  $traceDump->TSIZE( scalar(@rdg) );
+
+  return ($traceDump);
 }
 
 __PACKAGE__->meta->make_immutable;
