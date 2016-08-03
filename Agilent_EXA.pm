@@ -1,5 +1,5 @@
 # -*- mode: perl -*-
-package Agilent_ESA;
+package Agilent_EXA;
 use Moose;
 use Trace::SA;
 use PDL;
