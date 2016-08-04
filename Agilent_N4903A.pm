@@ -395,6 +395,21 @@ sub PGpolarity {
   }
 }
 
+sub jitterGlobal {
+  my $self = shift;
+  my $on = shift;
+
+  if ( !defined($on) ) {
+    my $res = $self->iquery(":SOURCE8:JITTER:GLOBAL:STATE?");
+    return($res); # 0 or 1
+  } else {
+    $on = ! ( $on==0 );
+    $self->iwrite(sprintf(":SOURCE8:JITTER:GLOBAL:STATE %d;",$on));
+    $self->iOPC();
+  }
+}
+
+
 #Return BER over last 100ms
 sub instantaneousBER {
   my $self = shift;
