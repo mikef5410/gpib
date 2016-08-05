@@ -409,6 +409,95 @@ sub jitterGlobal {
   }
 }
 
+sub pj1On {
+  my $self=shift;
+  my $on=shift;
+
+  if (! defined($on) ) {
+    my $res = $self->iquery(":SOURCE8:JITTER:PER1:STATE?");
+    return($res); # 0 or 1
+  } else {
+    $on = ! ( $on==0 );
+    $self->iwrite(sprintf(":SOURCE8:JITTER:PER1:STATE %d;",$on));
+  }
+}
+
+sub pj2On {
+  my $self=shift;
+  my $on=shift;
+
+  if (! defined($on) ) {
+    my $res = $self->iquery(":SOURCE8:JITTER:PER2:STATE?");
+    return($res); # 0 or 1
+  } else {
+    $on = ! ( $on==0 );
+    $self->iwrite(sprintf(":SOURCE8:JITTER:PER2:STATE %d;",$on));
+  }
+}
+
+sub pj1Setup {
+  my $self = shift;
+  my $function = shift; # SIN, SQU, or TRI
+  my $freq = shift;  # Hz
+  my $level = shift; # UI
+
+  my $funcOK=0;
+ SW: {
+    if (index("SINUSOID",uc($function),0)) {
+      $funcOK=1;
+      last SW;
+    }
+    if (index("SQUARE",uc($function),0)) {
+      $funcOK=1;
+      last SW;
+    }
+    if (index("TRIANGLE",uc($function),0)) {
+      $funcOK=1;
+      last SW;
+    }
+  }
+  if ($funcOK == 0) {
+    #$self->throw( {err => "Bad PJ function select"} );
+    $self->logger->logconfess("Bad PJ function select: $function, should be one of SIN, SQU, or TRI");
+  }
+  
+  $self->iwrite(sprintf(":SOURCE8:JITTER:PER1:FUNCTION:SELECT %s;",$function));
+  $self->iwrite(sprintf(":SOURCE8:JITTER:PER1:FREQ %g;",$freq));
+  $self->iwrite(sprintf(":SOURCE8:JITTER:PER1:LEVEL %g;",$level));
+}
+
+
+sub pj2Setup {
+  my $self = shift;
+  my $function = shift; # SIN, SQU, or TRI
+  my $freq = shift;  # Hz
+  my $level = shift; # UI
+
+  my $funcOK=0;
+ SW: {
+    if (index("SINUSOID",uc($function),0)) {
+      $funcOK=1;
+      last SW;
+    }
+    if (index("SQUARE",uc($function),0)) {
+      $funcOK=1;
+      last SW;
+    }
+    if (index("TRIANGLE",uc($function),0)) {
+      $funcOK=1;
+      last SW;
+    }
+  }
+  if ($funcOK == 0) {
+    #$self->throw( {err => "Bad PJ function select"} );
+    $self->logger->logconfess("Bad PJ function select: $function, should be one of SIN, SQU, or TRI");
+  }
+  
+  $self->iwrite(sprintf(":SOURCE8:JITTER:PER2:FUNCTION:SELECT %s;",$function));
+  $self->iwrite(sprintf(":SOURCE8:JITTER:PER2:FREQ %g;",$freq));
+  $self->iwrite(sprintf(":SOURCE8:JITTER:PER2:LEVEL %g;",$level));
+}
+
 
 #Return BER over last 100ms
 sub instantaneousBER {
