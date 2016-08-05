@@ -1,7 +1,7 @@
 # -*- mode: perl -*-
 package Agilent_ESA;
 use Moose;
-use Trace::SA;
+use InstrumentTrace::SA;
 use PDL;
 
 use namespace::autoclean;
@@ -108,7 +108,7 @@ sub SetupSA {
 sub getTRA {
   my $self = shift;
 
-  my $traceDump = Trace::SA->new();
+  my $traceDump = InstrumentTrace::SA->new();
 
   $self->iwrite(":FREQ:START?");
   $traceDump->FA( $self->iread() + 0.0 );
