@@ -5,10 +5,12 @@ package Agilent_N4903A;
 use Moose;
 use namespace::autoclean;
 
+use Exception::Class ( 'IOError', 'UsageError' );
+
 ## no critic (ValuesAndExpressions::ProhibitAccessOfPrivateData)
 ## no critic (BitwiseOperators)
 
-with( 'GPIBWrap', 'Throwable' );    #Use Try::Tiny to catch my errors
+with( 'GPIBWrap' );    #Use Try::Tiny to catch my errors
 
 #Questionable Status Register
 our %QSR = (
@@ -216,7 +218,7 @@ sub prbsSet {
   if ( $prbsPatt =~ /PRB[SN](7|10|11|13|15|23|31)/ ) {
     $self->iwrite(":SOURCE1:PATTERN:SELECT $prbsPatt;");
   } else {
-    $self->throw( { err => "Bad prbs pattern choice" } );
+    UsageError->throw( { err => "Bad prbs pattern choice" } );
   }
   my $res = $self->iOPC();
 }
@@ -228,7 +230,7 @@ sub prbsSetED {
   if ( $prbsPatt =~ /PRB[SN](7|10|11|13|15|23|31)/ ) {
     $self->iwrite(":SENSEE1:PATTERN:SELECT $prbsPatt;");
   } else {
-    $self->throw( { err => "Bad prbs pattern choice" } );
+    UsageError->throw( { err => "Bad prbs pattern choice" } );
   }
   my $res = $self->iOPC();
 }
@@ -306,7 +308,7 @@ sub subrateDivisor {
   if ( $div >= 2 && $div <= 128 ) {
     $self->iwrite( sprintf( ":SOURCE5:DIVIDER %d;", $div ) );
   } else {
-    $self->throw( { err => "Subrate divisor out of range" } );
+    UsageError->throw( { err => "Subrate divisor out of range" } );
   }
   $self->iOPC();
 }
@@ -457,7 +459,7 @@ sub pj1Setup {
     }
   }
   if ($funcOK == 0) {
-    #$self->throw( {err => "Bad PJ function select"} );
+    #UsageError->throw( {err => "Bad PJ function select"} );
     $self->logger->logconfess("Bad PJ function select: $function, should be one of SIN, SQU, or TRI");
   }
   
@@ -489,7 +491,7 @@ sub pj2Setup {
     }
   }
   if ($funcOK == 0) {
-    #$self->throw( {err => "Bad PJ function select"} );
+    #UsageError->throw( {err => "Bad PJ function select"} );
     $self->logger->logconfess("Bad PJ function select: $function, should be one of SIN, SQU, or TRI");
   }
   
