@@ -6,14 +6,12 @@ package GPIBWrap;
 #use Moose;
 #use namespace::autoclean;
 use Moose::Role;
-use Time::HiRes qw(sleep usleep);
+use Time::HiRes qw(sleep usleep gettimeofday tv_interval);
 use Time::Out qw(timeout);
-use Carp;
+use Carp qw(cluck longmess shortmess);
 use Module::Runtime qw(use_module use_package_optimistically);
 
 use Exception::Class ( 'IOError', 'TransportError' );
-
-
 
 ## no critic (BitwiseOperators)
 
@@ -277,10 +275,15 @@ sub iquery {
 
 =item B<< $instrument->iOPC([$timeout]) >>
 
-Very similar to *OPC?, however, if the timeout is specified (in seconds, fractions are ok),
-it'll return -1 if the timeout expires. Returns 1 when the operation in complete. This is a better
-way to wait for long operations than *OPC? because lan devices can timeout an the instrument doesn't know it.
-This code will poll every second for the Operation Complete bit in the ESR, thus avoiding timeouts on the lan.
+Very similar to *OPC?, however, if the timeout is specified (in seconds,
+fractions are ok), it'll return -1 if the timeout expires. Returns 1 when the
+operation in complete. This is a better way to wait for long operations than
+*OPC? because lan devices can timeout and the instrument doesn't know it.  This
+code will poll every second for the Operation Complete bit in the ESR, thus
+avoiding timeouts on the lan.
+
+This will work for IEEE 488.2 compliant instruments, but for others, you'll
+probably need to overload this function.
 
 =back
 
@@ -295,33 +298,36 @@ sub iOPC {
 
   #$self->log('GPIBWrap.IOTrace')->info( sprintf( "iOPC %g", $timeout ) );
   return if ( !defined( $self->gpib ) );
+  $self->iwrite("*ESE 1;");    #Propagate OPC up to STB
+  $self->iwrite("*OPC;");      #Tell the instrument we're interested in OPC
+  my $tstart = [gettimeofday];
 
-  $self->iwrite("*OPC;");    #Tell the instrument we're interested in OPC
-
-  #Poll STB for operation complete until timeout
+  #Poll STB for ESB bit, then read ESR for OPC
+  my $pollInterval = 1.0;
   if ($timeout) {
-    while ( $timeout > 0 ) {
-      $ret = 0;
-      $self->iwrite("*ESR?");
-      for ( my $j = 0 ; $j < 5 ; $j++ ) {
-        my $stb = $self->ireadstb();
-        if ( $stb & 1 << 4 ) {    #There's an answer ...
-          $ret = $self->iread() || 0;
-          return (1) if ( $ret & 0x1 );
-          last;
+    while ( tv_interval($tstart) <= $timeout ) {
+      my $stb = $self->ireadstb();
+      if ( $stb & ( 1 << 5 ) ) {    #Event status bit set?
+        my $esr = $self->iquery("*ESR?");    #Read ESR
+        if ( $esr & 0x1 ) {                  #OPC set?
+          return (1);
         }
-        usleep(250e3);            #250msec
-      }    #for loop
-      if ( $ret & (0x1) ) {
-        return (1);
       }
-      usleep( ( $timeout > 1.0 ) ? 1e6 : $timeout * 1e6 );
-      $timeout = $timeout - 1.0;
+      my $sleepTime = $timeout - tv_interval($tstart);
+      if ( $sleepTime <= 0 ) {
+        last;
+      }
+      $sleepTime = ( $sleepTime >= $pollInterval ) ? $pollInterval : $sleepTime;
+      usleep( $sleepTime * 1e6 );
     }    #While timeout
+
+    #If we get here, we timed out.
+    $self->log('GPIBWrap.IOTrace')->error( shortmess("IOPC Timeout") );
     return (-1);
-  }    #If timeout
+  }
 
   #No timeout case ...
+  my $lc = 0;
   while (1) {
     $ret = $self->iquery("*ESR?") || 0;
     if ( $ret & (0x1) ) {
@@ -330,9 +336,12 @@ sub iOPC {
 
     #$ret = $self->iquery("*OPC?") || 0;
     #last if ( $self->reason() != 0 );
-    sleep(1);
+    my $exp = int( $lc / 5 );
+    $exp = $exp > 4 ? 4 : $exp;
+    sleep( 1 << $exp );    #exponential backoff up to 16 sec.
+    $lc++;
   }
-  return ( $ret & 0x1 );
+  return ( $ret & 0x1 );    #We should never get here
 }
 
 =over 4
