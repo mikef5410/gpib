@@ -312,6 +312,7 @@ sub iOPC {
         if ( $esr & 0x1 ) {                  #OPC set?
           return (1);
         }
+        usleep(500000); # 500ms sleep
       }
       my $sleepTime = $timeout - tv_interval($tstart);
       if ( $sleepTime <= 0 ) {
