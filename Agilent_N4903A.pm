@@ -88,7 +88,7 @@ sub outputsON {
     $conn = "CONNECTED";
   }
   $self->iwrite(":OUTPUT1:CENTRAL $conn;");
-  $self->iOPC();
+  #$self->iOPC();
 }
 
 sub amplitude_cm {
@@ -126,7 +126,7 @@ SW: {
 
   }
 
-  my $trash = $self->iOPC();
+  #my $trash = $self->iOPC();
 }
 
 sub amplitude {
@@ -270,7 +270,7 @@ SW: {
       last SW;
     }
   }
-  $self->iOPC();
+  #$self->iOPC();
 }
 
 sub clockAmplitude {
@@ -298,7 +298,7 @@ sub clockRate {
   $self->iwrite(":SENSE2:FREQ:CDR ON;");
   $self->iwrite(":SENSE6:MODE INT;");
   $self->iwrite(":SOURCE9:OUTPUT:STATE INT;");
-  $self->iOPC();
+  #$self->iOPC();
 }
 
 sub subrateDivisor {
@@ -310,7 +310,7 @@ sub subrateDivisor {
   } else {
     UsageError->throw( { err => "Subrate divisor out of range" } );
   }
-  $self->iOPC();
+  #$self->iOPC();
 }
 
 sub defineStraightPatternFile {
@@ -380,7 +380,7 @@ sub EDpolarity {
     return ($pol);
   } else {
     $self->iwrite( sprintf( ":INPUT1:POLARITY %s;", $pol ) );
-    $self->iOPC();
+    #$self->iOPC();
   }
 }
 
@@ -393,7 +393,7 @@ sub PGpolarity {
     return ($pol);
   } else {
     $self->iwrite( sprintf( ":OUTPUT1:POLARITY %s;", $pol ) );
-    $self->iOPC();
+    #$self->iOPC();
   }
 }
 
