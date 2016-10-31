@@ -437,6 +437,52 @@ sub pj2On {
   }
 }
 
+sub sjOn {
+    my $self = shift;
+    my $on = shift;
+
+  if ( !defined($on) ) {
+    my $res = $self->iquery(":SOURCE8:JITTER:SIN:STATE?");
+    return ($res);    # 0 or 1
+  } else {
+    $on = !( $on == 0 );
+    $self->iwrite( sprintf( ":SOURCE8:JITTER:SIN:STATE %d;", $on ) );
+  }
+}
+
+sub sjSetup {
+  my $self     = shift;
+  my $dist     = shift || "DATA"; #DATA, CLOCk, or BOTH
+  my $freq     = shift;    # Hz
+  my $level    = shift;    # UI
+
+  my $distOK = 0;
+SW: {
+    if ( index( "DATA", uc($dist), 0 ) ) {
+      $distOK = 1;
+      last SW;
+    }
+    if ( index( "CLOCK", uc($dist), 0 ) ) {
+      $distOK = 1;
+      last SW;
+    }
+    if ( index( "BOTH", uc($dist), 0 ) ) {
+      $distOK = 1;
+      last SW;
+    }
+  }
+  if ( $distOK == 0 ) {
+
+    #UsageError->throw( {err => "Bad SJ distribution select"} );
+    $self->logger->logconfess("Bad SJ distribution select: $dist, should be one of DATA, CLOCk, or BOTH");
+  }
+
+  $self->iwrite( sprintf( ":SOURCE8:JITTER:SIN:DISTRIBUTION %s;", $dist ) );
+  $self->iwrite( sprintf( ":SOURCE8:JITTER:SIN:FREQ %g;",            $freq ) );
+  $self->iwrite( sprintf( ":SOURCE8:JITTER:SIN:LEVEL %g;",           $level ) );
+}
+    
+
 sub pj1Setup {
   my $self     = shift;
   my $function = shift;    # SIN, SQU, or TRI
@@ -500,6 +546,8 @@ SW: {
   $self->iwrite( sprintf( ":SOURCE8:JITTER:PER2:FREQ %g;",            $freq ) );
   $self->iwrite( sprintf( ":SOURCE8:JITTER:PER2:LEVEL %g;",           $level ) );
 }
+
+
 
 #Return BER over last 100ms
 sub instantaneousBER {
