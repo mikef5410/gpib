@@ -547,7 +547,17 @@ SW: {
   $self->iwrite( sprintf( ":SOURCE8:JITTER:PER2:LEVEL %g;",           $level ) );
 }
 
+#Abort and close all measurement sessions.
+sub resetSessions {
+  my $self=shift;
 
+  for (my $session=0; $session<31; $session++) {
+    #CLOSE session
+    $self->iwrite( sprintf( ":MEAS:gen%d:ABORt;", $session ) ); #Just in case
+    $self->iwrite( sprintf( ":MEAS:gen%d:CLOSE;", $session ) );
+  }
+  #$self->iOPC(5);
+}
 
 #Return BER over last 100ms
 sub instantaneousBER {
