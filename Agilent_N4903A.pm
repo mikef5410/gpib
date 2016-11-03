@@ -220,7 +220,7 @@ sub prbsSet {
   } else {
     UsageError->throw( { err => "Bad prbs pattern choice" } );
   }
-  my $res = $self->iOPC();
+  my $res = $self->iOPC(25);
 }
 
 sub prbsSetED {
@@ -232,7 +232,7 @@ sub prbsSetED {
   } else {
     UsageError->throw( { err => "Bad prbs pattern choice" } );
   }
-  my $res = $self->iOPC();
+  my $res = $self->iOPC(25);
 }
 
 sub clockAmpl_cm {
@@ -335,7 +335,7 @@ sub defineStraightPatternFile {
   $self->iwrite(":SOURCE1:PATTERN:UFILE:USE $filename, STRaight;");
   $self->iwrite(":SOURCE1:PATERN:FORMAT:DATA PACKED,1;");
   $self->iwrite(":SOURCE1:PATTERN:UFILE:DATA A, $filename, $patt ;");
-  my $res = $self->iOPC();
+  my $res = $self->iOPC(60);
 }
 
 sub selectPatternFile {
@@ -347,28 +347,28 @@ sub selectPatternFile {
   }
 
   $self->iwrite(":SOURCE1:PATT:SEL FILENAME, $filename;");
-  my $res = $self->iOPC();
+  my $res = $self->iOPC(30);
 }
 
 sub sequenceAdvance {
   my $self = shift;
 
   $self->iwrite(":SOURCE1:PATT:SEQ:EVENT ONCE;");
-  my $res = $self->iOPC();
+  my $res = $self->iOPC(20);
 }
 
 sub sequenceReset {
   my $self = shift;
 
   $self->iwrite(":SOURCE1:PATT:SEQ:EVENT RESUME;");
-  my $res = $self->iOPC();
+  my $res = $self->iOPC(20);
 }
 
 sub startSequencer {
   my $self = shift;
 
   $self->iwrite(":SOURCE1:PATT:SELECT SEQ;");
-  my $res = $self->iOPC();
+  my $res = $self->iOPC(20);
 }
 
 sub EDpolarity {
@@ -407,7 +407,7 @@ sub jitterGlobal {
   } else {
     $on = !( $on == 0 );
     $self->iwrite( sprintf( ":SOURCE8:JITTER:GLOBAL:STATE %d;", $on ) );
-    $self->iOPC();
+    $self->iOPC(60);
   }
 }
 

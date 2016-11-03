@@ -11,7 +11,7 @@ use Time::Out qw(timeout);
 use Carp qw(cluck longmess shortmess);
 use Module::Runtime qw(use_module use_package_optimistically);
 
-use Exception::Class ( 'IOError', 'TransportError' );
+use Exception::Class ( 'IOError', 'TransportError', 'TimeoutError' );
 
 ## no critic (BitwiseOperators)
 
@@ -22,6 +22,7 @@ has 'gpib'          => ( is => 'rw', default => undef );
 has 'bytes_read'    => ( is => 'ro', default => 0 );
 has 'reason'        => ( is => 'ro', default => 0 );
 has 'connectString' => ( is => 'rw', default => '' );
+has 'defaultTimeout' => ( is => 'rw', default => 0 );
 
 # This class wraps a variety of underlying GPIB mechanisms into a
 # common API
@@ -291,7 +292,7 @@ probably need to overload this function.
 
 sub iOPC {
   my $self = shift;
-  my $timeout = shift || 0;    #seconds (fractional ok)
+  my $timeout = shift || $self->defaultTimeout;    #seconds (fractional ok)
   my $ret;
 
   return if ( !defined($self) );
@@ -323,8 +324,9 @@ sub iOPC {
     }    #While timeout
 
     #If we get here, we timed out.
-    $self->log('GPIBWrap.IOTrace')->error( shortmess("IOPC Timeout") );
-    return (-1);
+    #$self->log('GPIBWrap.IOTrace')->error( shortmess("IOPC Timeout") );
+    TimeoutError->throw( { err => 'iOPC timeout' });
+    #return (-1);
   }
 
   #No timeout case ...
