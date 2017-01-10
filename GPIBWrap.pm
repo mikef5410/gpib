@@ -18,10 +18,10 @@ use Exception::Class ( 'IOError', 'TransportError', 'TimeoutError' );
 with 'Throwable';    #Use Try::Tiny to catch my errors
 with 'MooseX::Log::Log4perl';
 
-has 'gpib'          => ( is => 'rw', default => undef );
-has 'bytes_read'    => ( is => 'ro', default => 0 );
-has 'reason'        => ( is => 'ro', default => 0 );
-has 'connectString' => ( is => 'rw', default => '' );
+has 'gpib'           => ( is => 'rw', default => undef );
+has 'bytes_read'     => ( is => 'ro', default => 0 );
+has 'reason'         => ( is => 'ro', default => 0 );
+has 'connectString'  => ( is => 'rw', default => '' );
 has 'defaultTimeout' => ( is => 'rw', default => 0 );
 
 # This class wraps a variety of underlying GPIB mechanisms into a
@@ -313,7 +313,7 @@ sub iOPC {
         if ( $esr & 0x1 ) {                  #OPC set?
           return (1);
         }
-        usleep(500000); # 500ms sleep
+        usleep(500000);                      # 500ms sleep
       }
       my $sleepTime = $timeout - tv_interval($tstart);
       if ( $sleepTime <= 0 ) {
@@ -324,9 +324,10 @@ sub iOPC {
     }    #While timeout
 
     #If we get here, we timed out.
-    #$self->log('GPIBWrap.IOTrace')->error( shortmess("IOPC Timeout") );
-    TimeoutError->throw( { err => 'iOPC timeout' });
-    #return (-1);
+    $self->log('GPIBWrap.IOTrace')->error( shortmess("IOPC Timeout") );
+
+    #TimeoutError->throw( { err => 'iOPC timeout' });
+    return (-1);
   }
 
   #No timeout case ...

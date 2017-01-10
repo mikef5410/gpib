@@ -2,7 +2,7 @@
 package Agilent_ESA;
 use Moose;
 use InstrumentTrace::SA;
-use PDL;
+use PDL::Core;
 
 use namespace::autoclean;
 

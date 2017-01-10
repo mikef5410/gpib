@@ -88,6 +88,7 @@ sub outputsON {
     $conn = "CONNECTED";
   }
   $self->iwrite(":OUTPUT1:CENTRAL $conn;");
+
   #$self->iOPC();
 }
 
@@ -270,6 +271,7 @@ SW: {
       last SW;
     }
   }
+
   #$self->iOPC();
 }
 
@@ -298,6 +300,7 @@ sub clockRate {
   $self->iwrite(":SENSE2:FREQ:CDR ON;");
   $self->iwrite(":SENSE6:MODE INT;");
   $self->iwrite(":SOURCE9:OUTPUT:STATE INT;");
+
   #$self->iOPC();
 }
 
@@ -310,6 +313,7 @@ sub subrateDivisor {
   } else {
     UsageError->throw( { err => "Subrate divisor out of range" } );
   }
+
   #$self->iOPC();
 }
 
@@ -380,6 +384,7 @@ sub EDpolarity {
     return ($pol);
   } else {
     $self->iwrite( sprintf( ":INPUT1:POLARITY %s;", $pol ) );
+
     #$self->iOPC();
   }
 }
@@ -393,6 +398,7 @@ sub PGpolarity {
     return ($pol);
   } else {
     $self->iwrite( sprintf( ":OUTPUT1:POLARITY %s;", $pol ) );
+
     #$self->iOPC();
   }
 }
@@ -438,8 +444,8 @@ sub pj2On {
 }
 
 sub sjOn {
-    my $self = shift;
-    my $on = shift;
+  my $self = shift;
+  my $on   = shift;
 
   if ( !defined($on) ) {
     my $res = $self->iquery(":SOURCE8:JITTER:SIN:STATE?");
@@ -451,10 +457,10 @@ sub sjOn {
 }
 
 sub sjSetup {
-  my $self     = shift;
-  my $dist     = shift || "DATA"; #DATA, CLOCk, or BOTH
-  my $freq     = shift;    # Hz
-  my $level    = shift;    # UI
+  my $self  = shift;
+  my $dist  = shift || "DATA";    #DATA, CLOCk, or BOTH
+  my $freq  = shift;              # Hz
+  my $level = shift;              # UI
 
   my $distOK = 0;
 SW: {
@@ -478,10 +484,9 @@ SW: {
   }
 
   $self->iwrite( sprintf( ":SOURCE8:JITTER:SIN:DISTRIBUTION %s;", $dist ) );
-  $self->iwrite( sprintf( ":SOURCE8:JITTER:SIN:FREQ %g;",            $freq ) );
-  $self->iwrite( sprintf( ":SOURCE8:JITTER:SIN:LEVEL %g;",           $level ) );
+  $self->iwrite( sprintf( ":SOURCE8:JITTER:SIN:FREQ %g;",         $freq ) );
+  $self->iwrite( sprintf( ":SOURCE8:JITTER:SIN:LEVEL %g;",        $level ) );
 }
-    
 
 sub pj1Setup {
   my $self     = shift;
@@ -549,13 +554,15 @@ SW: {
 
 #Abort and close all measurement sessions.
 sub resetSessions {
-  my $self=shift;
+  my $self = shift;
 
-  for (my $session=0; $session<31; $session++) {
+  for ( my $session = 0 ; $session < 31 ; $session++ ) {
+
     #CLOSE session
-    $self->iwrite( sprintf( ":MEAS:gen%d:ABORt;", $session ) ); #Just in case
+    $self->iwrite( sprintf( ":MEAS:gen%d:ABORt;", $session ) );    #Just in case
     $self->iwrite( sprintf( ":MEAS:gen%d:CLOSE;", $session ) );
   }
+
   #$self->iOPC(5);
 }
 
