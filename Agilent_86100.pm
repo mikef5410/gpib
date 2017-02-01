@@ -4,7 +4,12 @@ package Agilent_86100;
 use Moose;
 use namespace::autoclean;
 
-use Time::HiRes qw(sleep);
+use Time::HiRes qw(sleep usleep gettimeofday tv_interval);
+use Time::Out qw(timeout);
+use Carp qw(cluck longmess shortmess);
+use Module::Runtime qw(use_module use_package_optimistically);
+
+use Exception::Class ( 'IOError', 'TransportError', 'TimeoutError' );
 
 ## no critic (ProhibitTwoArgOpen)
 ## no critic (ValuesAndExpressions::ProhibitAccessOfPrivateData)
@@ -28,6 +33,79 @@ sub Reset() {
 
   $self->iwrite('*RST;');
   return 0;
+}
+
+=over 4
+
+=item B<< $instrument->XiOPC([$timeout]) >>
+
+Very similar to *OPC?, however, if the timeout is specified (in seconds,
+fractions are ok), it'll return -1 if the timeout expires. Returns 1 when the
+operation in complete. This is a better way to wait for long operations than
+*OPC? because lan devices can timeout and the instrument doesn't know it.  This
+code will poll every second for the Operation Complete bit in the ESR, thus
+avoiding timeouts on the lan.
+
+This will work for IEEE 488.2 compliant instruments, but for others, you'll
+probably need to overload this function.
+
+=back
+
+=cut
+#Calling it XiOPC to disable this method and use the one in GPIBWrap
+sub XiOPC {
+  my $self = shift;
+  my $timeout = shift || $self->defaultTimeout;    #seconds (fractional ok)
+  my $ret;
+
+  return if ( !defined($self) );
+
+  #$self->log('GPIBWrap.IOTrace')->info( sprintf( "iOPC %g", $timeout ) );
+  return if ( !defined( $self->gpib ) );
+  $self->iwrite("*ESE 255;");    #Propagate OPC up to STB
+  $self->iwrite("*OPC?");        #Tell the instrument we're interested in OPC
+  my $tstart = [gettimeofday];
+
+  #Poll STB for ESB bit, then read ESR for OPC
+  my $pollInterval = 1.0;
+  if ($timeout) {
+    while ( tv_interval($tstart) <= $timeout ) {
+      my $stb = $self->ireadstb();
+      if ( $stb & ( 1 << 4 ) ) {    #Message available?
+        return (1);                 #Good to go...
+        usleep(500000);             # 500ms sleep
+      }
+      my $sleepTime = $timeout - tv_interval($tstart);
+      if ( $sleepTime <= 0 ) {
+        last;
+      }
+      $sleepTime = ( $sleepTime >= $pollInterval ) ? $pollInterval : $sleepTime;
+      usleep( $sleepTime * 1e6 );
+    }    #While timeout
+
+    #If we get here, we timed out.
+    $self->log('Agilent86100.IOTrace')->error( shortmess("IOPC Timeout") );
+
+    #TimeoutError->throw( { err => 'iOPC timeout' });
+    return (-1);
+  }
+
+  #No timeout case ...
+  my $lc = 0;
+  while (1) {
+    $ret = $self->ireadstb() || 0;
+    if ( $ret & ( 0x1 << 4 ) ) {
+      return (1);
+    }
+
+    #$ret = $self->iquery("*OPC?") || 0;
+    #last if ( $self->reason() != 0 );
+    my $exp = int( $lc / 5 );
+    $exp = $exp > 4 ? 4 : $exp;
+    sleep( 1 << $exp );    #exponential backoff up to 16 sec.
+    $lc++;
+  }
+  return ($ret);           #We should never get here
 }
 
 ###############################################################################
@@ -2185,7 +2263,7 @@ sub Histogram_Window {
       $offset = $self->iread();              # Read INSTR response
       $offset += $position;                  # Relative position change
       $command = (":HIST:WIND:$edge $offset");    # write command
-                                                  #print "Histogram_Window using relative $edge position: $offset\n";
+           #print "Histogram_Window using relative $edge position: $offset\n";
     } else {
       $command = (":HIST:WIND:$edge $position");    # write command
     }
