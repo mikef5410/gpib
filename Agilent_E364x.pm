@@ -40,7 +40,7 @@ sub channel_select {
     $chan = sprintf( "OUT%d", $chan );
   }
   $self->iwrite(":INST:SEL $chan;");
-  $self->iOPC();
+  $self->iOPC(10);
 }
 
 sub channel_on {    # turn on the channels
@@ -48,7 +48,7 @@ sub channel_on {    # turn on the channels
 
   # all or none for this instrument
   $self->iwrite(":OUTPUT:STATE ON;");
-  $self->iOPC();
+  $self->iOPC(10);
 
   #
   return 0;
@@ -60,7 +60,7 @@ sub channel_off {    # turn off the channels
 
   #return 0	if ( $self->{VIRTUAL} );
   $self->iwrite(":OUTPUT:STATE OFF;");
-  $self->iOPC();
+  $self->iOPC(10);
   #
   return 0;
 
@@ -71,7 +71,7 @@ sub v_set {
   my $volts = shift;
 
   $self->iwrite( sprintf( ":VOLTAGE %g;", $volts ) );
-  $self->iOPC();
+  $self->iOPC(10);
   return (0);
 }
 
@@ -80,7 +80,7 @@ sub i_set {
   my $amps = shift;
 
   $self->iwrite( sprintf( ":CURRENT %g;", $amps ) );
-  $self->iOPC();
+  $self->iOPC(10);
   return (0);
 }
 
@@ -93,7 +93,7 @@ sub force_voltage {    # force a voltage
   my $iforce = abs($icompliance);         # trickery here;
                                           # isn't really a compliance
   $self->iwrite(":APPLY $vforce,$iforce;");
-  $self->iOPC();
+  $self->iOPC(10);
 
   return 0;
 }
@@ -107,7 +107,7 @@ sub force_amperage {                      # force a current
                                           # isn't really a compliance
   my $iforce = $self->{Isign} * $amps;
   $self->iwrite(":APPLY $vforce,$iforce;");
-  $self->iOPC();
+  $self->iOPC(10);
   return 0;
 }
 
