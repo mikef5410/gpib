@@ -52,6 +52,7 @@ probably need to overload this function.
 =back
 
 =cut
+
 #Calling it XiOPC to disable this method and use the one in GPIBWrap
 sub XiOPC {
   my $self = shift;
@@ -2263,7 +2264,7 @@ sub Histogram_Window {
       $offset = $self->iread();              # Read INSTR response
       $offset += $position;                  # Relative position change
       $command = (":HIST:WIND:$edge $offset");    # write command
-           #print "Histogram_Window using relative $edge position: $offset\n";
+                                                  #print "Histogram_Window using relative $edge position: $offset\n";
     } else {
       $command = (":HIST:WIND:$edge $position");    # write command
     }

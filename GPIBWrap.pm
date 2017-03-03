@@ -13,9 +13,11 @@ use Module::Runtime qw(use_module use_package_optimistically);
 
 use Exception::Class ( 'IOError', 'TransportError', 'TimeoutError' );
 
+use Net::Telnet;    #For e2050Reset only
+
 ## no critic (BitwiseOperators)
 
-with 'Throwable';    #Use Try::Tiny to catch my errors
+with 'Throwable';   #Use Try::Tiny to catch my errors
 with 'MooseX::Log::Log4perl';
 
 has 'gpib'           => ( is => 'rw', default => undef );
@@ -23,6 +25,7 @@ has 'bytes_read'     => ( is => 'ro', default => 0 );
 has 'reason'         => ( is => 'ro', default => 0 );
 has 'connectString'  => ( is => 'rw', default => '' );
 has 'defaultTimeout' => ( is => 'rw', default => 0 );
+has 'host'           => ( is => 'rw', default => '' );
 
 # This class wraps a variety of underlying GPIB mechanisms into a
 # common API
@@ -118,6 +121,7 @@ sub BUILD {
   if ( !defined($target) || length($target) == 0 ) {
     $target = "inst0";
   }
+  $self->host($host);
 
   if ( $proto =~ /VXI11/i ) {
     use_module("VXI11::Client");
@@ -802,6 +806,33 @@ sub getErrors {
     push( @errlist, $res );
   }
   return ( \@errlist );
+}
+
+=over 4
+
+=item B<< $instrument->e2050Reset([$ip]) >>
+
+This is a convenience method to reset and clear errors in an HP E2050
+Lan<->HPIB box. If you didn't construct with a connection string, then this
+routine must be called with an ip address or hostname for the E2050 (C<$ip>).
+ONLY CALL THIS IF YOU'RE TALKING TO AN HP E2050.
+
+=back
+
+=cut
+
+sub e2050Reset {
+  my $self = shift;
+  my $ip = shift || $self->host;
+
+  return if ( !length($ip) );
+  my $t = Net::Telnet->new( Timeout => 20, Prompt => '/>\s*/' );
+  my $result = $t->open($ip);
+
+  #printf("%s\n",$result?"opened":"didn't open");
+  my @return = $t->cmd("reboot");
+  $result = $t->print('y');
+  return;
 }
 
 1;
