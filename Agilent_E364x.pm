@@ -16,7 +16,7 @@ sub init {
   return 0 if ( $self->{VIRTUAL} );
 
   $self->iconnect();
-  $self->iwrite("*RST;") if ( $self->{RESET} );    #Get us to default state
+  $self->iwrite("*RST") if ( $self->{RESET} );    #Get us to default state
 
   my $err = 'x';                                   # seed for first iteration
                                                    # clear any accumulated errors
@@ -25,7 +25,7 @@ sub init {
     $err = $self->iread( 100, 1000 );
     last if ( $err =~ /\+0/ );                     # error 0 means buffer is empty
   }
-  $self->iwrite("*CLS;");
+  $self->iwrite("*CLS");
   #
   return 0;
 
@@ -138,8 +138,8 @@ sub cmdSetup {
   my $self = shift;
 
   $self->iclear();
-  $self->iwrite("*CLS;");
-  $self->iwrite("*ESE 255;");
+  $self->iwrite("*CLS");
+  $self->iwrite("*ESE 255");
   $self->iOPC(3);
 }
 
