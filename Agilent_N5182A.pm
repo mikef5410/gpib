@@ -2,6 +2,8 @@
 package Agilent_N5182A;
 use Moose;
 use namespace::autoclean;
+use Time::HiRes qw(sleep usleep gettimeofday tv_interval);
+use Carp qw(cluck longmess shortmess);
 
 with( 'GPIBWrap', 'Throwable' );    #Use Try::Tiny to catch my errors
 
@@ -11,8 +13,7 @@ sub init {
   return 0 if ( $self->{VIRTUAL} );
 
   $self->iconnect();
-  $self->iwrite("*RST;") if ( $self->{RESET} );    #Get us to default state
-
+  $self->iwrite("*RST") if ( $self->{RESET} );    #Get us to default state
   my $err = 'x';                                   # seed for first iteration
                                                    # clear any accumulated errors
   while ($err) {
@@ -20,7 +21,7 @@ sub init {
     $err = $self->iread( 100, 1000 );
     last if ( $err =~ /\+0/ );                     # error 0 means buffer is empty
   }
-  $self->iwrite("*CLS;");
+  $self->iwrite("*CLS");
   #
   return 0;
 
@@ -35,7 +36,7 @@ sub freq {
     return ( $self->iquery(":SOURCE:FREQUENCY:CW?") );
   } else {
     $self->iwrite(":SOURCE:FREQUENCY:CW $val;");
-    $self->iOPC();
+    $self->iOPC(3);
   }
 }
 
@@ -48,7 +49,7 @@ sub ampl {
     return ( $self->iquery(":POWER?") );
   } else {
     $self->iwrite(":POWER $val dBm;");
-    $self->iOPC();
+    $self->iOPC(3);
   }
 }
 
@@ -57,7 +58,7 @@ sub outputState {
   my $val  = shift;
 
   if ( !defined($val) ) {
-    return ( $self->iquery(":OUTPUT:STATE?") );
+    return ( $self->iquery(":OUTP?") );
   } else {
     my $s = 0;
   SW: {
@@ -66,9 +67,11 @@ sub outputState {
       $s = ( $val != 0 );
     }
     $self->iwrite(":OUTPUT:STATE $s;");
-    $self->iOPC();
+    $self->iOPC(3);
   }
 }
+
+
 
 __PACKAGE__->meta->make_immutable;
 1;

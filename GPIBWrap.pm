@@ -303,8 +303,9 @@ sub iOPC {
 
   #$self->log('GPIBWrap.IOTrace')->info( sprintf( "iOPC %g", $timeout ) );
   return if ( !defined( $self->gpib ) );
-  $self->iwrite("*ESE 255;");    #Propagate OPC up to STB
-  $self->iwrite("*OPC;");        #Tell the instrument we're interested in OPC
+  $self->iwrite("*ESE 255");    #Propagate OPC up to STB
+  $self->iwrite("*CLS");
+  $self->iwrite("*OPC");        #Tell the instrument we're interested in OPC
   my $tstart = [gettimeofday];
 
   #Poll STB for ESB bit, then read ESR for OPC
