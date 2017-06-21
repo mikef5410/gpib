@@ -31,7 +31,7 @@ with( 'GPIBWrap', 'Throwable' );    #Use Try::Tiny to catch my errors
 sub Reset() {
   my $self = shift;
 
-  $self->iwrite('*RST;');
+  $self->iwrite('*RST');
   return 0;
 }
 
@@ -63,7 +63,7 @@ sub XiOPC {
 
   #$self->log('GPIBWrap.IOTrace')->info( sprintf( "iOPC %g", $timeout ) );
   return if ( !defined( $self->gpib ) );
-  $self->iwrite("*ESE 255;");    #Propagate OPC up to STB
+  $self->iwrite("*ESE 255");    #Propagate OPC up to STB
   $self->iwrite("*OPC?");        #Tell the instrument we're interested in OPC
   my $tstart = [gettimeofday];
 
@@ -119,7 +119,7 @@ sub ipresent {    # overload the pre-defined ipresent()
   my $self = shift;
 
   my $identity;
-  $identity = $self->iquery('*IDN?;');
+  $identity = $self->iquery('*IDN?');
   if ( $identity eq '' ) {
     return 1;     # failure
   } else {
@@ -1323,7 +1323,7 @@ sub QuerySetup {
   my ($self) = shift;
 
   # Instrument ID
-  $self->iwrite("*IDN?;");
+  $self->iwrite("*IDN?");
   $self->{idn} = $self->iread();
   chomp( $self->{idn} );
 
