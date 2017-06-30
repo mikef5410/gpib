@@ -314,7 +314,7 @@ sub iOPC {
     while ( tv_interval($tstart) <= $timeout ) {
       my $stb = $self->ireadstb();
       if ( $stb & ( 1 << 5 ) ) {    #Event status bit set?
-        my $esr = $self->iquery("*ESR?");    #Read ESR
+        my $esr = $self->iquery("*ESR?") || 0;    #Read ESR
         if ( $esr & 0x1 ) {                  #OPC set?
           return (1);
         }

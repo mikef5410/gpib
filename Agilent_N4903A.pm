@@ -413,7 +413,7 @@ sub jitterGlobal {
   } else {
     $on = !( $on == 0 );
     $self->iwrite( sprintf( ":SOURCE8:JITTER:GLOBAL:STATE %d;", $on ) );
-    $self->iOPC(60);
+    $self->iOPC(20);
   }
 }
 
