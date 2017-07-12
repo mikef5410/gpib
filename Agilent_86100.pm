@@ -54,17 +54,17 @@ probably need to overload this function.
 =cut
 
 #Calling it XiOPC to disable this method and use the one in GPIBWrap
-sub XiOPC {
+sub iOPC {
   my $self = shift;
   my $timeout = shift || $self->defaultTimeout;    #seconds (fractional ok)
   my $ret;
 
   return if ( !defined($self) );
 
-  #$self->log('GPIBWrap.IOTrace')->info( sprintf( "iOPC %g", $timeout ) );
+  $self->log('Agilent86100.IOTrace')->info( sprintf( "iOPC %g", $timeout ) );
   return if ( !defined( $self->gpib ) );
-  $self->iwrite("*ESE 255");    #Propagate OPC up to STB
-  $self->iwrite("*OPC?");        #Tell the instrument we're interested in OPC
+  $self->iwrite("*ESE 255\n");    #Propagate OPC up to STB
+  $self->iwrite("*OPC?\n");        #Tell the instrument we're interested in OPC
   my $tstart = [gettimeofday];
 
   #Poll STB for ESB bit, then read ESR for OPC
@@ -72,9 +72,10 @@ sub XiOPC {
   if ($timeout) {
     while ( tv_interval($tstart) <= $timeout ) {
       my $stb = $self->ireadstb();
-      if ( $stb & ( 1 << 4 ) ) {    #Message available?
+      #$self->log('Agilent86100.IOTrace')->info(sprintf("STB: 0x%x\n",$stb));
+      if ( $stb & ( 1 << 4 ) ) {    #MAV bit (4) set?
+        my $x = $self->iread(); #$self->log('Agilent86100.IOTrace')->info(sprintf("OPC Read: 0x%x\n",$x));
         return (1);                 #Good to go...
-        usleep(500000);             # 500ms sleep
       }
       my $sleepTime = $timeout - tv_interval($tstart);
       if ( $sleepTime <= 0 ) {
@@ -87,7 +88,8 @@ sub XiOPC {
     #If we get here, we timed out.
     $self->log('Agilent86100.IOTrace')->error( shortmess("IOPC Timeout") );
 
-    #TimeoutError->throw( { err => 'iOPC timeout' });
+    $self->iclear(); #Device clear ... the *OPC? timed out...
+    TimeoutError->throw( { err => 'iOPC timeout' });
     return (-1);
   }
 
