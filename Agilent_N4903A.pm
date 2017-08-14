@@ -12,6 +12,9 @@ use Exception::Class ( 'IOError', 'UsageError' );
 
 with('GPIBWrap');    #Use Try::Tiny to catch my errors
 
+has 'extRef' => ( is => 'rw', default => 0 );
+
+
 #Questionable Status Register
 our %QSR = (
   DATALOSS        => 0x1,
@@ -92,6 +95,19 @@ sub outputsON {
   #$self->iOPC();
 }
 
+sub externalReference {
+  my $self = shift;
+  my $on = shift;
+
+  if ($on) {
+    $self->iwrite(":SENSE6:MODE REF;");
+    $self->extRef(1);
+  } else {
+    $self->iwrite(":SENSE6:MODE INT;");
+    $self->extRef(0);
+  }
+}
+
 sub amplitude_cm {
   my $self = shift;
   my $ampl = shift;
@@ -154,6 +170,7 @@ sub autoAlign {
     last if ( $result =~ /SUCCESSFUL|FAILED|ABORTED/ );
     sleep(0.5);
   }
+  sleep 1;
   return (1) if ( $result =~ /SUCCESSFUL/ );
   return (0);
 }
@@ -298,8 +315,12 @@ sub clockRate {
 
   #$self->iwrite( sprintf( ":SENSE2:FREQ:CW %g;", $freq ) );
   $self->iwrite(":SENSE2:FREQ:CDR ON;");
-  $self->iwrite(":SENSE6:MODE INT;");
-  $self->iwrite(":SOURCE9:OUTPUT:STATE INT;");
+  if ($self->extRef) {
+    $self->iwrite(":SENSE6:MODE REF;");
+  } else {
+    $self->iwrite(":SENSE6:MODE INT;");
+  }
+  #$self->iwrite(":SOURCE9:OUTPUT:STATE INT;");
 
   #$self->iOPC();
 }
@@ -413,7 +434,7 @@ sub jitterGlobal {
   } else {
     $on = !( $on == 0 );
     $self->iwrite( sprintf( ":SOURCE8:JITTER:GLOBAL:STATE %d;", $on ) );
-    $self->iOPC(20);
+    #$self->iOPC(20);
   }
 }
 
