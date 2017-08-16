@@ -89,7 +89,7 @@ sub iOPC {
     $self->log('Agilent86100.IOTrace')->error( shortmess("IOPC Timeout") );
 
     $self->iclear(); #Device clear ... the *OPC? timed out...
-    TimeoutError->throw( { err => 'iOPC timeout' });
+    #TimeoutError->throw( { err => 'iOPC timeout' });
     return (-1);
   }
 
