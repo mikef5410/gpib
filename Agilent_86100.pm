@@ -3053,5 +3053,23 @@ sub Top_Base() {
   }
 }
 
+###############################################################################
+# Calibrate 86108 Module !FLEXDCA COMMANDS!
+###############################################################################
+sub Cal108 {
+  my $self = shift;
+
+  my $mod = $self->iquery(":SYSTEM:MODEL? SLOT1");
+  if ($mod =~/86108/) {
+    $self->iwrite(":CALibrate:MODule:SLOT1:START");
+    my $res = $self->iOPC(30);
+    $self->iwrite(":CALibrate:CONTinue");
+    $res = $self->iOPC(300);
+    $self->iwrite(":CALibrate:CONTinue");
+  } else {
+    printf("No 86108 module found!");
+  }
+}
+
 __PACKAGE__->meta->make_immutable;
 1;
