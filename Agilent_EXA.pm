@@ -16,12 +16,12 @@ sub init {
   $self->iconnect();
   $self->iwrite("*RST") if ( $self->{RESET} );    #Get us to default state
 
-  my $err = 'x';                                   # seed for first iteration
-                                                   # clear any accumulated errors
+  my $err = 'x';                                  # seed for first iteration
+                                                  # clear any accumulated errors
   while ($err) {
     $self->iwrite(":SYST:ERR?");
     $err = $self->iread( 100, 1000 );
-    last if ( $err =~ /\+0/ );                     # error 0 means buffer is empty
+    last if ( $err =~ /\+0/ );                    # error 0 means buffer is empty
   }
   $self->iwrite("*CLS");
   #
@@ -32,14 +32,14 @@ sub init {
 sub SetupSA {
   my ($self) = shift;
 
-  my ($fa) = shift;                                # start frequency hertz
-  my ($fb) = shift;                                # stop frequency hertz
-  my ($rl) = shift;                                # reference level dbm
-  my ($au) = shift;                                # absolute amplitude units string
-  my ($rb) = shift;                                # resolution bandwidth hertz
-  my ($vb) = shift;                                # video bandwidth hertz
-  my ($st) = shift;                                # sweep time seconds
-  my ($lg) = shift;                                # linear (if==0) or dB per div (if>0)
+  my ($fa) = shift;                               # start frequency hertz
+  my ($fb) = shift;                               # stop frequency hertz
+  my ($rl) = shift;                               # reference level dbm
+  my ($au) = shift;                               # absolute amplitude units string
+  my ($rb) = shift;                               # resolution bandwidth hertz
+  my ($vb) = shift;                               # video bandwidth hertz
+  my ($st) = shift;                               # sweep time seconds
+  my ($lg) = shift;                               # linear (if==0) or dB per div (if>0)
 
   my $sweeptime;
   if ( $lg < 0 ) {
@@ -47,7 +47,7 @@ sub SetupSA {
     return ();
   }
 
-  my $fr = $self->{FreqRef};                       # 10MHz ref
+  my $fr = $self->{FreqRef};                      # 10MHz ref
 
   #$self->iwrite("FREF $fr;");	    # EXT or INT
 

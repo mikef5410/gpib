@@ -315,10 +315,10 @@ sub iOPC {
       my $stb = $self->ireadstb();
       if ( $stb & ( 1 << 5 ) ) {    #Event status bit set?
         my $esr = $self->iquery("*ESR?") || 0;    #Read ESR
-        if ( $esr & 0x1 ) {                  #OPC set?
+        if ( $esr & 0x1 ) {                       #OPC set?
           return (1);
         }
-        usleep(500000);                      # 500ms sleep
+        usleep(500000);                           # 500ms sleep
       }
       my $sleepTime = $timeout - tv_interval($tstart);
       if ( $sleepTime <= 0 ) {

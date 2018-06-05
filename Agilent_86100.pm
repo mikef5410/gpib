@@ -64,7 +64,7 @@ sub iOPC {
   $self->log('Agilent86100.IOTrace')->info( sprintf( "iOPC %g", $timeout ) );
   return if ( !defined( $self->gpib ) );
   $self->iwrite("*ESE 255\n");    #Propagate OPC up to STB
-  $self->iwrite("*OPC?\n");        #Tell the instrument we're interested in OPC
+  $self->iwrite("*OPC?\n");       #Tell the instrument we're interested in OPC
   my $tstart = [gettimeofday];
 
   #Poll STB for ESB bit, then read ESR for OPC
@@ -72,9 +72,10 @@ sub iOPC {
   if ($timeout) {
     while ( tv_interval($tstart) <= $timeout ) {
       my $stb = $self->ireadstb();
+
       #$self->log('Agilent86100.IOTrace')->info(sprintf("STB: 0x%x\n",$stb));
       if ( $stb & ( 1 << 4 ) ) {    #MAV bit (4) set?
-        my $x = $self->iread(); #$self->log('Agilent86100.IOTrace')->info(sprintf("OPC Read: 0x%x\n",$x));
+        my $x = $self->iread();     #$self->log('Agilent86100.IOTrace')->info(sprintf("OPC Read: 0x%x\n",$x));
         return (1);                 #Good to go...
       }
       my $sleepTime = $timeout - tv_interval($tstart);
@@ -88,8 +89,8 @@ sub iOPC {
     #If we get here, we timed out.
     $self->log('Agilent86100.IOTrace')->error( shortmess("IOPC Timeout") );
 
-    $self->iclear(); #Device clear ... the *OPC? timed out...
-    #TimeoutError->throw( { err => 'iOPC timeout' });
+    $self->iclear();    #Device clear ... the *OPC? timed out...
+                        #TimeoutError->throw( { err => 'iOPC timeout' });
     return (-1);
   }
 
@@ -3060,7 +3061,7 @@ sub Cal108 {
   my $self = shift;
 
   my $mod = $self->iquery(":SYSTEM:MODEL? SLOT1");
-  if ($mod =~/86108/) {
+  if ( $mod =~ /86108/ ) {
     $self->iwrite(":CALibrate:MODule:SLOT1:START");
     my $res = $self->iOPC(30);
     $self->iwrite(":CALibrate:CONTinue");

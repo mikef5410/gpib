@@ -19,111 +19,110 @@ use File::Basename;
 
 use Agilent_86100;
 
-my $chan="DIFF1";
-my $scope=Agilent_86100->new(connectString=>"VXI11::dca-1::inst0");
+my $chan = "DIFF1";
+my $scope = Agilent_86100->new( connectString => "VXI11::dca-1::inst0" );
 
 #Log::Log4perl->get_logger("GPIBWrap.IOTrace")->level($INFO);
 
-my $id=$scope->iquery("*IDN?");
+my $id = $scope->iquery("*IDN?");
+
 #print "$id\n";
-$|=1;
+$| = 1;
 
 $scope->Set_Waveform_Source($chan);
-my $npts = $scope->iquery(":WAVeform:YFORmat:POINts?");
-my $xinc = $scope->iquery(":WAVeform:YFORmat:XINCrement?");
+my $npts    = $scope->iquery(":WAVeform:YFORmat:POINts?");
+my $xinc    = $scope->iquery(":WAVeform:YFORmat:XINCrement?");
 my $xorigin = $scope->iquery("WAVeform:YFORmat:XORigin?");
 
-print(STDERR "$npts, $xinc, $xorigin\n");
-my ($x,$y)=getAscii();
+print( STDERR "$npts, $xinc, $xorigin\n" );
+my ( $x, $y ) = getAscii();
 
 #my ($x,$y)=getFloat();
 
-
 sub getAscii {
   my $trace = $scope->iquery(":WAVEFORM:XYFORmat:ASCii:YDATa?");
-  my $stb = $scope->ireadstb();
+  my $stb   = $scope->ireadstb();
 
-  my $count=0;
-  while($stb & (1<<4)) { #Message Available?
-    print(STDERR ".") if ($count++ % 1000 == 0);
+  my $count = 0;
+  while ( $stb & ( 1 << 4 ) ) {    #Message Available?
+    print( STDERR "." ) if ( $count++ % 1000 == 0 );
     $trace .= $scope->iread();
     $stb = $scope->ireadstb();
   }
 
-  my @yvals = split(",",$trace);
+  my @yvals = split( ",", $trace );
 
   $trace = $scope->iquery(":WAVEFORM:XYFORmat:ASCii:XDATa?");
-  $stb = $scope->ireadstb();
+  $stb   = $scope->ireadstb();
 
-  $count=0;
-  while($stb & (1<<4)) { #Message Available?
-    print(STDERR ".") if ($count++ % 1000 == 0);
+  $count = 0;
+  while ( $stb & ( 1 << 4 ) ) {    #Message Available?
+    print( STDERR "." ) if ( $count++ % 1000 == 0 );
     $trace .= $scope->iread();
     $stb = $scope->ireadstb();
   }
-  my @xvals = split(",",$trace);
-  return(\@xvals,\@yvals);
+  my @xvals = split( ",", $trace );
+  return ( \@xvals, \@yvals );
 }
 
-
-sub getFloat { #No worky
+sub getFloat {                     #No worky
   my $tdata = $scope->iwrite(":WAVEFORM:XYFORmat:FLOat:XDATa?");
-  $tdata = $scope->iread(bufferlen=>4096,autochomp=>0,termchrset=>0);
-  printf("Got %d bytes\n",length($tdata));
-  my $ndig=substr($tdata,1,1);
-  my $len=substr($tdata,2,$ndig);
+  $tdata = $scope->iread( bufferlen => 4096, autochomp => 0, termchrset => 0 );
+  printf( "Got %d bytes\n", length($tdata) );
+  my $ndig = substr( $tdata, 1, 1 );
+  my $len  = substr( $tdata, 2, $ndig );
 
-  print(substr($tdata,0,10),"\n");
+  print( substr( $tdata, 0, 10 ), "\n" );
   print("$ndig, $len\n");
-  
-  $tdata=substr($tdata,$ndig+2);
-  print(substr($tdata,0,10),"\n");
+
+  $tdata = substr( $tdata, $ndig + 2 );
+  print( substr( $tdata, 0, 10 ), "\n" );
 
   #my $stb = $scope->ireadstb();
 
-  my $count=0;
-  while(length($tdata)<$len ) { #Message Available?
-    print(STDERR ".") if ($count++ % 1000 == 0);
-    my $dat = $scope->iread(bufferlen=>4096,autochomp=>0,termchrset=>0);
-    my $nb=$scope->bytes_read;
-    last if ($nb<=0);
-    if ($nb != 256) {
-      printf("Hey got %d bytes\n",$scope->bytes_read);
+  my $count = 0;
+  while ( length($tdata) < $len ) {    #Message Available?
+    print( STDERR "." ) if ( $count++ % 1000 == 0 );
+    my $dat = $scope->iread( bufferlen => 4096, autochomp => 0, termchrset => 0 );
+    my $nb = $scope->bytes_read;
+    last if ( $nb <= 0 );
+    if ( $nb != 256 ) {
+      printf( "Hey got %d bytes\n", $scope->bytes_read );
     }
-    if (length($dat) != $nb) {
-      printf("Hey. Truncation! %d\n",length($dat));
+    if ( length($dat) != $nb ) {
+      printf( "Hey. Truncation! %d\n", length($dat) );
     }
     $tdata .= $dat;
+
     #$stb = $scope->ireadstb();
   }
 
-  printf("Block count: %d\n",$count);
-  print("Size:",length($tdata),"\n");
+  printf( "Block count: %d\n", $count );
+  print( "Size:", length($tdata), "\n" );
   my $ix = 0;
   my @x;
-  for (my $j=0; $ix<=length($tdata); $j++) {
-    $x[$j]=unpack("f",substr($tdata,$ix,4));
-    $ix+=4;
+  for ( my $j = 0 ; $ix <= length($tdata) ; $j++ ) {
+    $x[$j] = unpack( "f", substr( $tdata, $ix, 4 ) );
+    $ix += 4;
   }
-  
+
   #my @x = unpack("f*",$tdata);
-  my @y=@x;
-  return(\@x,\@y);
+  my @y = @x;
+  return ( \@x, \@y );
 }
-
-
 
 #print("Npoints: ",scalar(@$x), ",",scalar(@$y),"\n");
 #print("ready?"); my $xxx=<>;
-printf("! - DCA Waveform dump from %s\n",$chan);
-printf("! - %s\n",$id);
-printf("! - %s\n",scalar(localtime(time)));
+printf( "! - DCA Waveform dump from %s\n", $chan );
+printf( "! - %s\n",                        $id );
+printf( "! - %s\n",                        scalar( localtime(time) ) );
 printf("! - MDIF TIM format\n");
 print("BEGIN TIMEDATA\n");
 print("#T (SEC V R 50)\n");
-printf("%%time %s\n",$chan);
-for (my $j=0; $j<scalar(@$x); $j++) {
-  printf("%g %g\n",$x->[$j],$y->[$j]);
+printf( "%%time %s\n", $chan );
+
+for ( my $j = 0 ; $j < scalar(@$x) ; $j++ ) {
+  printf( "%g %g\n", $x->[$j], $y->[$j] );
 }
 print("END\n");
 

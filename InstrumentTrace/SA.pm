@@ -14,9 +14,9 @@ has 'RB' => ( is => 'rw', isa => 'Num', default => undef );    #Res BW
 has 'VB' => ( is => 'rw', isa => 'Num', default => undef );    #Vid BW
 has 'ST' => ( is => 'rw', isa => 'Num', default => undef );    #Sweep time
 has 'LG' => ( is => 'rw', isa => 'Num', default => undef );    #dB/div
-has 'AUNITS' => ( is => 'rw', default => undef );                                #Power units
-has 'TDATA' => ( is => 'rw', isa => 'PDL', default => sub { PDL->null(); } );    #Trace data
-has 'TSIZE' => ( is => 'rw', isa => 'Int', default => undef );                   #Num points
+has 'AUNITS' => ( is => 'rw', default => undef );                                     #Power units
+has 'TDATA'  => ( is => 'rw', isa     => 'PDL', default => sub { PDL->null(); } );    #Trace data
+has 'TSIZE'  => ( is => 'rw', isa     => 'Int', default => undef );                   #Num points
 
 __PACKAGE__->meta->make_immutable;
 1;

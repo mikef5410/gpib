@@ -14,7 +14,6 @@ with('GPIBWrap');    #Use Try::Tiny to catch my errors
 
 has 'extRef' => ( is => 'rw', default => 0 );
 
-
 #Questionable Status Register
 our %QSR = (
   DATALOSS        => 0x1,
@@ -97,7 +96,7 @@ sub outputsON {
 
 sub externalReference {
   my $self = shift;
-  my $on = shift;
+  my $on   = shift;
 
   if ($on) {
     $self->iwrite(":SENSE6:MODE REF;");
@@ -315,11 +314,12 @@ sub clockRate {
 
   #$self->iwrite( sprintf( ":SENSE2:FREQ:CW %g;", $freq ) );
   $self->iwrite(":SENSE2:FREQ:CDR ON;");
-  if ($self->extRef) {
+  if ( $self->extRef ) {
     $self->iwrite(":SENSE6:MODE REF;");
   } else {
     $self->iwrite(":SENSE6:MODE INT;");
   }
+
   #$self->iwrite(":SOURCE9:OUTPUT:STATE INT;");
 
   #$self->iOPC();
