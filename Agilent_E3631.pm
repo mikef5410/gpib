@@ -70,7 +70,7 @@ SW: {
   $self->CurrentChan($chan);
   $self->cmdSetup();
   $self->iwrite(":INST:SEL $chan;");
-  $self->iOPC(3);
+#  $self->iOPC(3);
 }
 
 sub channel_on {    # turn on the channels
@@ -79,7 +79,7 @@ sub channel_on {    # turn on the channels
   # all or none for this instrument
   $self->cmdSetup();
   $self->iwrite(":OUTPUT:STATE ON;");
-  $self->iOPC(3);
+#  $self->iOPC(3);
 
   #
   return 0;
@@ -92,7 +92,7 @@ sub channel_off {    # turn off the channels
   #return 0	if ( $self->{VIRTUAL} );
   $self->cmdSetup();
   $self->iwrite(":OUTPUT:STATE OFF;");
-  $self->iOPC(3);
+#  $self->iOPC(3);
   #
   return 0;
 
@@ -104,7 +104,7 @@ sub v_set {
 
   $self->cmdSetup();
   $self->iwrite( sprintf( ":SOURCE:VOLTAGE %g;", $volts ) );
-  $self->iOPC(3);
+#  $self->iOPC(3);
   return (0);
 }
 
@@ -114,7 +114,7 @@ sub i_set {
 
   $self->cmdSetup();
   $self->iwrite( sprintf( "SOURCE:CURRENT %g;", $amps ) );
-  $self->iOPC(3);
+#  $self->iOPC(3);
   return (0);
 }
 
@@ -130,7 +130,7 @@ sub force_voltage {    # force a voltage
   # isn't really a compliance
   $self->cmdSetup();
   $self->iwrite(":APPLY $chan,$vforce,$iforce;");
-  $self->iOPC(3);
+#  $self->iOPC(3);
 
   return 0;
 }
@@ -147,7 +147,7 @@ sub force_amperage {                      # force a current
 
   $self->cmdSetup();
   $self->iwrite(":APPLY $chan,$vforce,$iforce;");
-  $self->iOPC(3);
+#  $self->iOPC(3);
   return 0;
 }
 
@@ -170,10 +170,11 @@ sub measure_amperage {                    # measure a current
 sub cmdSetup {
   my $self = shift;
 
+  return;
   $self->iclear();
   $self->iwrite("*CLS");
   $self->iwrite("*ESE 255");
-  $self->iOPC(3);
+#  $self->iOPC(3);
 }
 
 __PACKAGE__->meta->make_immutable;
