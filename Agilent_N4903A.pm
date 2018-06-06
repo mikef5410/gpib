@@ -132,11 +132,11 @@ SW: {
       last SW;
     }
     if ( defined($offs) && !defined($ampl) ) {
-      $self->iwrite( sprintf( ":SOUR:VOLT:OFFS %g;", $ampl, $offs ) );
+      $self->iwrite( sprintf( ":SOUR:VOLT:OFFS %g;", $offs ) );
       last SW;
     }
     if ( !defined($offs) && defined($ampl) ) {
-      $self->iwrite( sprintf( ":SOUR:VOLT:AMPL %g;", $ampl, $offs ) );
+      $self->iwrite( sprintf( ":SOUR:VOLT:AMPL %g;", $ampl ) );
       last SW;
     }
 
