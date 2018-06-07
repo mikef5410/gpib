@@ -237,7 +237,7 @@ sub prbsSet {
   } else {
     UsageError->throw( { err => "Bad prbs pattern choice" } );
   }
-  my $res = $self->iOPC(25);
+  #my $res = $self->iOPC(25);
 }
 
 sub prbsSetED {
@@ -249,7 +249,7 @@ sub prbsSetED {
   } else {
     UsageError->throw( { err => "Bad prbs pattern choice" } );
   }
-  my $res = $self->iOPC(25);
+  #my $res = $self->iOPC(25);
 }
 
 sub clockAmpl_cm {
