@@ -198,7 +198,7 @@ sub next {
     return (undef);
   }
   $self->{index}=$ix;
-  return ( pow($self->logbase, ($ix * $self->{_logstep}) + $self->_logb($self->start)));
+  return ( $self->start * pow($self->logbase, ($ix * $self->{_logstep}) ));
 }
 
 sub reset {
