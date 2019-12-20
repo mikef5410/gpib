@@ -21,14 +21,14 @@ while (my $val = $aiter->next()) {
   print("$val\n");
 }
 
-my $linIter=Iterator::Linspace->new(start=>5, stop=>15, npts=>10);
+my $linIter=Iterator::Linspace->new(start=>5, stop=>50, npts=>10);
 while (my $val = $linIter->next()) {
   print($val,"\n");
 }
 
 print("\n");
 
-$linIter=Iterator::Linspace->new(start=>5, stop=>15, increment=>0.5);
+$linIter=Iterator::Linspace->new(start=>15, stop=>5, increment=>-0.5);
 while (my $val = $linIter->next()) {
   print($val,"\n");
 }

@@ -18,6 +18,11 @@ sub reset {
   return;
 }
 
+sub nitems {
+  my $self = shift;
+  return;
+}
+
 __PACKAGE__->meta->make_immutable;
 1;
 
@@ -49,6 +54,10 @@ sub reset {
   $self->done(0);
 }
 
+sub nitems {
+  my $self = shift;
+  return(scalar(@{$self->values}));
+}
 
 __PACKAGE__->meta->make_immutable;
 1;
@@ -90,6 +99,11 @@ sub reset {
   $self->done(0);
 }
 
+sub nitems {
+  my $self = shift;
+  return(scalar(@{$self->_keys}));
+}
+
 __PACKAGE__->meta->make_immutable;
 1;
 
@@ -114,7 +128,7 @@ sub BUILD {
   if ($self->{_npts_specified}) {
     $self->{increment} = ( (  $self->stop - $self->start ) / ($self->npts - 1) );
   } else {
-    $self->{npts} = floor( ( abs( $self->stop - $self->start )) / $self->increment );
+    $self->{npts} = 1 + floor( ( ( $self->stop - $self->start )) / $self->increment );
   }
 }
 
@@ -136,6 +150,11 @@ sub reset {
   $self->done(0);
 }
 
+sub nitems {
+  my $self = shift;
+  return($self->npts);
+}
+
 __PACKAGE__->meta->make_immutable;
 1;
 
@@ -147,7 +166,6 @@ use namespace::autoclean;
 
 extends 'Iterator';
 
-#f(x) = base ^ (x*log_base(Span)/n) + start
 
 has 'start'   => ( is => 'ro', isa => 'Num' );
 has 'stop'    => ( is => 'ro', isa => 'Num' );
@@ -161,7 +179,7 @@ sub BUILD {
   my $self = shift;
 
   $self->{span} = ( abs( $self->stop - $self->start ) );
-  $self->{_dir} = ( $self->stop >= $self->start ) ? 1.0 : -1.0;
+  $self->{_logstep} = ( $self->_logb($self->stop) - $self->_logb($self->start) ) / ($self->npts - 1);
 }
 
 sub _logb {
@@ -180,13 +198,18 @@ sub next {
     return (undef);
   }
   $self->{index}=$ix;
-  return ( ( $self->_dir * pow(10,($ix * $self->_logb( $self->span ) / ($self->npts-1) )) + $self->start ));
+  return ( pow($self->logbase, ($ix * $self->{_logstep}) + $self->_logb($self->start)));
 }
 
 sub reset {
   my $self = shift;
   $self->done(0);
   $self->{index}=-1;
+}
+
+sub nitems {
+  my $self = shift;
+  return($self->ntps);
 }
 
 __PACKAGE__->meta->make_immutable;
