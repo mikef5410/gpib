@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 #
 use lib("..");
-use Iterator;
+use Measurement::Iterator;
 use Data::Dumper qw(Dumper);
 #use Iterator::Hash;
 #use Iterator::Array;
