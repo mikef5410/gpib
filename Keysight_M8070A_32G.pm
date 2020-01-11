@@ -1,7 +1,7 @@
 # -*- mode: perl -*-
 package Keysight_M8070A_32G;
 use Moose;
-use namespace::autoclean;
+#use namespace::autoclean;
 use Exception::Class ( 'UsageError' );
 
 use constant 'OK' => 0;
@@ -10,7 +10,7 @@ use constant 'ERR' => 1;
 with( 'GPIBWrap', 'Throwable' );    #Use Try::Tiny to catch my errors
 
 my %instrMethods = (
-   jitterGlobal => { scpi => ":SOURCE:JITTer:GLOBAL:STATE 'M2.DataOut'", argtype => "BOOLEAN" },
+   jitterGlobal => { scpi => ":SOURCE:JITTer:GLOBAL:STATE 'M1.System'", argtype => "BOOLEAN" },
    PJState => { scpi => ":SOURCE:JITTer:LFRequency:PERiodic:STATE 'M2.DataOut'", argtype => "BOOLEAN" },
    PJAmplitude => { scpi => ":SOURce:JITTer:LFRequency:PERiodic:AMPLitude 'M2.DataOut'", argtype => "NUMBER" },
    PJFrequency => { scpi => ":SOURce:JITTer:LFRequency:PERiodic:FREQuency 'M2.DataOut'", argtype => "NUMBER" },
@@ -41,7 +41,7 @@ my $onoffStateGeneric=sub {
       my $state=$self->iquery($subsys);
       return($state);
    }
-   $on = ($on != 0);
+   $on = ($on!=0)?1:0;
    $self->iwrite("$subsys,".$on);
 };
 
@@ -57,15 +57,15 @@ my $scalarSettingGeneric = sub {
       my $val=$self->iquery(queryform($subsys));
       return($val);
    }
-   $val = ($val != 0);
    $self->iwrite("$subsys,".$val);
 };
 
-sub BUILD {
+sub populateAccessors {
    my $self = shift;
    my $args = shift;
 
    my $meta = __PACKAGE__->meta;
+   $self->logsubsys(__PACKAGE__);
    foreach my $methodName (keys(%instrMethods)) {
       my $descriptor = $instrMethods{$methodName};
       if ($descriptor->{argtype} eq "BOOLEAN") {
@@ -80,21 +80,20 @@ sub BUILD {
             my $s = shift;
             my $arg = shift;
 
-            $arg=uc($arg) if ($descriptor->{argtype} eq "ENUM");
+            $arg=uc($arg) if (defined($arg) && $descriptor->{argtype} eq "ENUM");
             return($scalarSettingGeneric->($s,$methodName,$arg));
                            } );
       }
    }
 
    $meta->make_immutable;
-}
+ }
 
 sub init {
   my $self = shift;
 
-  return 0 if ( $self->{VIRTUAL} );
+  $self->populateAccessors();
 
-  $self->iconnect();
   $self->iwrite("*RST") if ( $self->{RESET} );    #Get us to default state
 
   my $err = 'x';                                  # seed for first iteration
@@ -102,7 +101,7 @@ sub init {
   while ($err) {
     $self->iwrite(":SYST:ERR?");
     $err = $self->iread( 100, 1000 );
-    last if ( $err =~ /\+0/ );                    # error 0 means buffer is empty
+    last if ( $err =~ /^0/ );                    # error 0 means buffer is empty
   }
   $self->iwrite("*CLS");
   #
@@ -184,8 +183,7 @@ sub PGbitRate {
   #32G mode, PG runs at 1/2 bitrate
   if ( !defined($clock) ) {
     $clock = 2 * $self->clockFreq();
-
-     return($clock);
+    return($clock);
   }
   $self->clockFreq($clock/2);
 }
@@ -193,9 +191,11 @@ sub PGbitRate {
 sub amplitude_cm {
    my $self = shift;
    my $vpp = shift;
-   my $vcm = shift || 0;
+   my $vcm = shift || 0.0;
 
-   $self->outputOffset($vcm);
+   if ($self->outputCoupling() eq 'DC') {
+     $self->outputOffset($vcm);
+   }
    $self->outputAmpl($vpp);
 }
 
@@ -235,6 +235,7 @@ sub argCheck {
    my $mname = shift;
    my $arg = shift;
 
+   return(OK) if (!defined($arg));
    my $descriptor=$instrMethods{$mname};
    return(OK) if (!exists($descriptor->{argcheck}));
    if ($descriptor->{argtype} == 'ENUM') {
