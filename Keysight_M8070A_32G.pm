@@ -1,93 +1,98 @@
 # -*- mode: perl -*-
 package Keysight_M8070A_32G;
 use Moose;
-#use namespace::autoclean;
-use Exception::Class ( 'UsageError' );
 
-use constant 'OK' => 0;
+#use namespace::autoclean;
+use Exception::Class ('UsageError');
+
+use constant 'OK'  => 0;
 use constant 'ERR' => 1;
 
 with( 'GPIBWrap', 'Throwable' );    #Use Try::Tiny to catch my errors
 
 my %instrMethods = (
-   jitterGlobal => { scpi => ":SOURCE:JITTer:GLOBAL:STATE 'M1.System'", argtype => "BOOLEAN" },
-   PJState => { scpi => ":SOURCE:JITTer:LFRequency:PERiodic:STATE 'M2.DataOut'", argtype => "BOOLEAN" },
-   PJAmplitude => { scpi => ":SOURce:JITTer:LFRequency:PERiodic:AMPLitude 'M2.DataOut'", argtype => "NUMBER" },
-   PJFrequency => { scpi => ":SOURce:JITTer:LFRequency:PERiodic:FREQuency 'M2.DataOut'", argtype => "NUMBER" },
-   PJ1State => { scpi => ":SOURce:JITTer:HFRequency:PERiodic1:STATe 'M2.DataOut'", argtype => "BOOLEAN" },
-   PJ1Amplitude => { scpi => ":SOURce:JITTer:HFRequency:PERiodic1:AMPLitude 'M2.DataOut'", argtype => "NUMBER" },
-   PJ1Frequency => { scpi => ":SOURce:JITTer:HFRequency:PERiodic1:FREQuency 'M2.DataOut'", argtype => "NUMBER" },
-   PJ2State => { scpi => ":SOURce:JITTer:HFRequency:PERiodic2:STATe 'M2.DataOut'", argtype => "BOOLEAN" },
-   PJ2Amplitude => { scpi => ":SOURce:JITTer:HFRequency:PERiodic2:AMPLitude 'M2.DataOut'", argtype => "NUMBER" },
-   PJ2Frequency => { scpi => ":SOURce:JITTer:HFRequency:PERiodic2:FREQuency 'M2.DataOut'", argtype => "NUMBER" },
-   outputAmpl => { scpi => ":SOURCE:VOLT:AMPL 'M2.DataOut'", argtype => "NUMBER" },
-   outputOffset => { scpi => ":SOURCE:VOLT:OFFSET 'M2.DataOut'", argtype => "NUMBER" },
-   outputCoupling => { scpi => ":OUTPUT:COUPLING 'M2.DataOut'", argtype => "ENUM", argcheck => ['AC','DC'] },
-   outputPolarity => { scpi => ":OUTPUT:POLARITY 'M2.DataOut'", argtype => "ENUM", argcheck => ['NORM','INV'] },
-   clockFreq => { scpi => ":SOURCE:FREQ 'M1.ClkGen'", argtype => "NUMBER" },
-   globalOutputsState => { scpi => ":OUTPUT:GLOBAL:STATE 'M1.System'", argtype=>"BOOLEAN" },
-   outputState => { scpi => ":OUTPUT:STATE 'M2.DataOut'", argtype => "BOOLEAN" },
-    );
+  jitterGlobal => { scpi => ":SOURCE:JITTer:GLOBAL:STATE 'M1.System'",                    argtype => "BOOLEAN" },
+  PJState      => { scpi => ":SOURCE:JITTer:LFRequency:PERiodic:STATE 'M2.DataOut'",      argtype => "BOOLEAN" },
+  PJAmplitude  => { scpi => ":SOURce:JITTer:LFRequency:PERiodic:AMPLitude 'M2.DataOut'",  argtype => "NUMBER" },
+  PJFrequency  => { scpi => ":SOURce:JITTer:LFRequency:PERiodic:FREQuency 'M2.DataOut'",  argtype => "NUMBER" },
+  PJ1State     => { scpi => ":SOURce:JITTer:HFRequency:PERiodic1:STATe 'M2.DataOut'",     argtype => "BOOLEAN" },
+  PJ1Amplitude => { scpi => ":SOURce:JITTer:HFRequency:PERiodic1:AMPLitude 'M2.DataOut'", argtype => "NUMBER" },
+  PJ1Frequency => { scpi => ":SOURce:JITTer:HFRequency:PERiodic1:FREQuency 'M2.DataOut'", argtype => "NUMBER" },
+  PJ2State     => { scpi => ":SOURce:JITTer:HFRequency:PERiodic2:STATe 'M2.DataOut'",     argtype => "BOOLEAN" },
+  PJ2Amplitude => { scpi => ":SOURce:JITTer:HFRequency:PERiodic2:AMPLitude 'M2.DataOut'", argtype => "NUMBER" },
+  PJ2Frequency => { scpi => ":SOURce:JITTer:HFRequency:PERiodic2:FREQuency 'M2.DataOut'", argtype => "NUMBER" },
+  outputAmpl   => { scpi => ":SOURCE:VOLT:AMPL 'M2.DataOut'",                             argtype => "NUMBER" },
+  outputOffset => { scpi => ":SOURCE:VOLT:OFFSET 'M2.DataOut'",                           argtype => "NUMBER" },
+  outputCoupling => { scpi => ":OUTPUT:COUPLING 'M2.DataOut'", argtype => "ENUM", argcheck => [ 'AC', 'DC' ] },
+  outputPolarity => { scpi => ":OUTPUT:POLARITY 'M2.DataOut'", argtype => "ENUM", argcheck => [ 'NORM', 'INV' ] },
+  clockFreq      => { scpi => ":SOURCE:FREQ 'M1.ClkGen'",      argtype => "NUMBER" },
+  globalOutputsState => { scpi => ":OUTPUT:GLOBAL:STATE 'M1.System'", argtype => "BOOLEAN" },
+  outputState        => { scpi => ":OUTPUT:STATE 'M2.DataOut'",       argtype => "BOOLEAN" },
+);
 
-my $onoffStateGeneric=sub {
-   my $self = shift;
-   my $mname = shift;
-   my $on = shift;
+my $onoffStateGeneric = sub {
+  my $self  = shift;
+  my $mname = shift;
+  my $on    = shift;
 
-   my $descriptor=$instrMethods{$mname};
-   my $subsys = $descriptor->{scpi};
-   if (! defined($on)) {
-      $subsys=~s/STATE/STATE?/;
-      my $state=$self->iquery($subsys);
-      return($state);
-   }
-   $on = ($on!=0)?1:0;
-   $self->iwrite("$subsys,".$on);
+  my $descriptor = $instrMethods{$mname};
+  my $subsys     = $descriptor->{scpi};
+  if ( !defined($on) ) {
+    $subsys =~ s/STATE/STATE?/;
+    my $state = $self->iquery($subsys);
+    return ($state);
+  }
+  $on = ( $on != 0 ) ? 1 : 0;
+  $self->iwrite( "$subsys," . $on );
 };
 
 my $scalarSettingGeneric = sub {
-   my $self = shift;
-   my $mname = shift;
-   my $val = shift;
+  my $self  = shift;
+  my $mname = shift;
+  my $val   = shift;
 
-   argCheck($mname,$val);
-   my $descriptor=$instrMethods{$mname};
-   my $subsys=$descriptor->{scpi};
-   if (! defined($val)) {
-      my $val=$self->iquery(queryform($subsys));
-      return($val);
-   }
-   $self->iwrite("$subsys,".$val);
+  argCheck( $mname, $val );
+  my $descriptor = $instrMethods{$mname};
+  my $subsys     = $descriptor->{scpi};
+  if ( !defined($val) ) {
+    my $val = $self->iquery( queryform($subsys) );
+    return ($val);
+  }
+  $self->iwrite( "$subsys," . $val );
 };
 
 sub populateAccessors {
-   my $self = shift;
-   my $args = shift;
+  my $self = shift;
+  my $args = shift;
 
-   my $meta = __PACKAGE__->meta;
-   $self->logsubsys(__PACKAGE__);
-   foreach my $methodName (keys(%instrMethods)) {
-      my $descriptor = $instrMethods{$methodName};
-      if ($descriptor->{argtype} eq "BOOLEAN") {
-         $meta->add_method($methodName => sub {
-            my $s = shift;
-            my $arg = shift;
-            return($onoffStateGeneric->($s,$methodName,$arg));
-                           });
-      }
-      if ($descriptor->{argtype} eq "NUMBER" || $descriptor->{argtype} eq "ENUM") {
-         $meta->add_method($methodName => sub {
-            my $s = shift;
-            my $arg = shift;
+  my $meta = __PACKAGE__->meta;
+  $self->logsubsys(__PACKAGE__);
+  foreach my $methodName ( keys(%instrMethods) ) {
+    my $descriptor = $instrMethods{$methodName};
+    if ( $descriptor->{argtype} eq "BOOLEAN" ) {
+      $meta->add_method(
+        $methodName => sub {
+          my $s   = shift;
+          my $arg = shift;
+          return ( $onoffStateGeneric->( $s, $methodName, $arg ) );
+        }
+      );
+    }
+    if ( $descriptor->{argtype} eq "NUMBER" || $descriptor->{argtype} eq "ENUM" ) {
+      $meta->add_method(
+        $methodName => sub {
+          my $s   = shift;
+          my $arg = shift;
 
-            $arg=uc($arg) if (defined($arg) && $descriptor->{argtype} eq "ENUM");
-            return($scalarSettingGeneric->($s,$methodName,$arg));
-                           } );
-      }
-   }
+          $arg = uc($arg) if ( defined($arg) && $descriptor->{argtype} eq "ENUM" );
+          return ( $scalarSettingGeneric->( $s, $methodName, $arg ) );
+        }
+      );
+    }
+  }
 
-   $meta->make_immutable;
- }
+  $meta->make_immutable;
+}
 
 sub init {
   my $self = shift;
@@ -101,7 +106,7 @@ sub init {
   while ($err) {
     $self->iwrite(":SYST:ERR?");
     $err = $self->iread( 100, 1000 );
-    last if ( $err =~ /^0/ );                    # error 0 means buffer is empty
+    last if ( $err =~ /^0/ );                     # error 0 means buffer is empty
   }
   $self->iwrite("*CLS");
   #
@@ -110,30 +115,30 @@ sub init {
 }
 
 sub onoffStateGeneric {
-   my $self = shift;
-   my $subsys = shift;
-   my $on = shift;
-   
-   if (! defined($on)) {
-      $subsys=~s/STATE/STATE?/;
-      my $state=$self->iquery($subsys);
-      return($state);
-   }
-   $on = ($on != 0);
-   $self->iwrite("$subsys,".$on);
+  my $self   = shift;
+  my $subsys = shift;
+  my $on     = shift;
+
+  if ( !defined($on) ) {
+    $subsys =~ s/STATE/STATE?/;
+    my $state = $self->iquery($subsys);
+    return ($state);
+  }
+  $on = ( $on != 0 );
+  $self->iwrite( "$subsys," . $on );
 }
 
 sub scalarSettingGeneric {
-   my $self = shift;
-   my $subsys = shift;
-   my $val = shift;
+  my $self   = shift;
+  my $subsys = shift;
+  my $val    = shift;
 
-   if (! defined($val)) {
-      my $val=$self->iquery(queryform($subsys));
-      return($val);
-   }
-   $val = ($val != 0);
-   $self->iwrite("$subsys,".$val);
+  if ( !defined($val) ) {
+    my $val = $self->iquery( queryform($subsys) );
+    return ($val);
+  }
+  $val = ( $val != 0 );
+  $self->iwrite( "$subsys," . $val );
 }
 
 sub outputsON {
@@ -183,67 +188,127 @@ sub PGbitRate {
   #32G mode, PG runs at 1/2 bitrate
   if ( !defined($clock) ) {
     $clock = 2 * $self->clockFreq();
-    return($clock);
+    return ($clock);
   }
-  $self->clockFreq($clock/2);
+  $self->clockFreq( $clock / 2 );
+}
+
+my $prbsXML = '<?xml version="1.0" encoding="utf-16"?>
+<sequenceDefinition xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.agilent.com/schemas/M8000/DataSequence">
+  <description />
+  <sequence>
+    <loop>
+      <block length="%d">
+        <prbs polynomial="%s" />
+      </block>
+    </loop>
+  </sequence>
+</sequenceDefinition>
+';
+
+sub PGPRBSpattern {
+  my $self        = shift;
+  my $prbsPattern = shift;
+  my $blockLen    = shift || 256;
+
+  my $pattern = "2^31-1";
+  if ( $prbsPattern eq "PRBS7" ) {
+    $pattern = "2^7-1";
+  } elsif ( $prbsPattern = "PRBS9" ) {
+    $pattern = "2^9-1";
+  } elsif ( $prbsPattern = "PRBS15" ) {
+    $pattern = "2^15-1";
+  } elsif ( $prbsPattern = "PRBS23" ) {
+    $pattern = "2^23-1";
+  }
+  my $patt = sprintf( $prbsXML, $blockLen, $pattern );
+  $self->iwrite(":DATA:SEQ:VAL 'Generator',$patt");
+
+}
+
+sub EDPRBSpattern {
+  my $self        = shift;
+  my $prbsPattern = shift;
+  my $blockLen    = shift || 256;
+
+  my $pattern = "2^31-1";
+  if ( $prbsPattern eq "PRBS7" ) {
+    $pattern = "2^7-1";
+  } elsif ( $prbsPattern = "PRBS9" ) {
+    $pattern = "2^9-1";
+  } elsif ( $prbsPattern = "PRBS15" ) {
+    $pattern = "2^15-1";
+  } elsif ( $prbsPattern = "PRBS23" ) {
+    $pattern = "2^23-1";
+  }
+  my $patt = sprintf( $prbsXML, $blockLen, $pattern );
+  $self->iwrite(":DATA:SEQ:VAL 'Analyzer',$patt");
+
+}
+
+sub stringBlockEncode {
+  my $self = shift;
+  my $str  = shift;
+
+  my $len = length($str);
+  return ( sprintf( "#3%d,%s", $len, $str ) );
 }
 
 sub amplitude_cm {
-   my $self = shift;
-   my $vpp = shift;
-   my $vcm = shift || 0.0;
+  my $self = shift;
+  my $vpp  = shift;
+  my $vcm  = shift || 0.0;
 
-   if ($self->outputCoupling() eq 'DC') {
-     $self->outputOffset($vcm);
-   }
-   $self->outputAmpl($vpp);
+  if ( $self->outputCoupling() eq 'DC' ) {
+    $self->outputOffset($vcm);
+  }
+  $self->outputAmpl($vpp);
 }
 
-
 sub trimwhite {
-   my $in = shift;
-   
-   $in=~s/^\s+//;
-   $in=~s/\s+$//;
-   $in=~s/\s+/ /;
-   return($in);
+  my $in = shift;
+
+  $in =~ s/^\s+//;
+  $in =~ s/\s+$//;
+  $in =~ s/\s+/ /;
+  return ($in);
 }
 
 sub queryform {
-   my $in = shift;
+  my $in = shift;
 
-   $in=trimwhite($in);
-   if ($in=~/\s+\'/) { #A subsystem qualifier?
-      $in=~s/\s+\'/? '/;
-   } else {
-      $in = $in . '?';
-   }
-   return($in);
+  $in = trimwhite($in);
+  if ( $in =~ /\s+\'/ ) {    #A subsystem qualifier?
+    $in =~ s/\s+\'/? '/;
+  } else {
+    $in = $in . '?';
+  }
+  return ($in);
 }
 
 sub enumCheck {
-   my $var = shift;
-   my $allow = shift;
-   
-   return(OK) if (!defined($var));
-   my %all = map { $_ => 1 } @$allow;
-   return(ERR) if (!exists($all{uc($var)}));
-   return(OK);
+  my $var   = shift;
+  my $allow = shift;
+
+  return (OK) if ( !defined($var) );
+  my %all = map { $_ => 1 } @$allow;
+  return (ERR) if ( !exists( $all{ uc($var) } ) );
+  return (OK);
 }
 
 sub argCheck {
-   my $mname = shift;
-   my $arg = shift;
+  my $mname = shift;
+  my $arg   = shift;
 
-   return(OK) if (!defined($arg));
-   my $descriptor=$instrMethods{$mname};
-   return(OK) if (!exists($descriptor->{argcheck}));
-   if ($descriptor->{argtype} == 'ENUM') {
-      enumCheck($arg,$descriptor->{argcheck}) || UsageError->throw({err=>sprintf("%s requires argument be one of %s",$mname,join(",",@{$descriptor->{argcheck}}))});
-   }
-   return(OK);
+  return (OK) if ( !defined($arg) );
+  my $descriptor = $instrMethods{$mname};
+  return (OK) if ( !exists( $descriptor->{argcheck} ) );
+  if ( $descriptor->{argtype} == 'ENUM' ) {
+    enumCheck( $arg, $descriptor->{argcheck} )
+      || UsageError->throw(
+      { err => sprintf( "%s requires argument be one of %s", $mname, join( ",", @{ $descriptor->{argcheck} } ) ) } );
+  }
+  return (OK);
 }
-   
-
 
 1;
