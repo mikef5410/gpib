@@ -1,6 +1,7 @@
 # -*- mode: perl -*-
 package Keysight_M8070A_32G;
 use Moose;
+use PDL;
 
 #use namespace::autoclean;
 use Exception::Class ('UsageError');
@@ -193,8 +194,8 @@ sub PGbitRate {
   $self->clockFreq( $clock / 2 );
 }
 
-my $prbsXML = '<?xml version="1.0" encoding="utf-16"?>
-<sequenceDefinition xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.agilent.com/schemas/M8000/DataSequence">
+my $prbsXML =
+'<sequenceDefinition xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.agilent.com/schemas/M8000/DataSequence">
   <description />
   <sequence>
     <loop>
@@ -214,16 +215,23 @@ sub PGPRBSpattern {
   my $pattern = "2^31-1";
   if ( $prbsPattern eq "PRBS7" ) {
     $pattern = "2^7-1";
-  } elsif ( $prbsPattern = "PRBS9" ) {
+  } elsif ( $prbsPattern eq "PRBS9" ) {
     $pattern = "2^9-1";
-  } elsif ( $prbsPattern = "PRBS15" ) {
+  } elsif ( $prbsPattern eq "PRBS15" ) {
     $pattern = "2^15-1";
-  } elsif ( $prbsPattern = "PRBS23" ) {
+  } elsif ( $prbsPattern eq "PRBS23" ) {
     $pattern = "2^23-1";
   }
-  my $patt = sprintf( $prbsXML, $blockLen, $pattern );
-  $self->iwrite(":DATA:SEQ:VAL 'Generator',$patt");
-
+  my $patt = $self->stringBlockEncode( sprintf( $prbsXML, $blockLen, $pattern ) );
+  $self->iwrite(":DATA:SEQ:DELALL;");
+  $self->iwrite(":DATA:SEQ:DEL 'Generator'");
+  $self->iwrite(":DATA:SEQ:NEW 'Generator'");
+  $self->iOPC(5);
+  $self->iwrite( ":DATA:SEQ:VAL 'Generator'," . $patt );
+  $self->iOPC(5);
+  $self->iwrite(":DATA:SEQ:BIND 'Generator','M2.DataOut'");
+  $self->iwrite(":DATA:SEQ:REST 'Generator'");
+  $self->iOPC(5);
 }
 
 sub EDPRBSpattern {
@@ -234,16 +242,22 @@ sub EDPRBSpattern {
   my $pattern = "2^31-1";
   if ( $prbsPattern eq "PRBS7" ) {
     $pattern = "2^7-1";
-  } elsif ( $prbsPattern = "PRBS9" ) {
+  } elsif ( $prbsPattern eq "PRBS9" ) {
     $pattern = "2^9-1";
-  } elsif ( $prbsPattern = "PRBS15" ) {
+  } elsif ( $prbsPattern eq "PRBS15" ) {
     $pattern = "2^15-1";
-  } elsif ( $prbsPattern = "PRBS23" ) {
+  } elsif ( $prbsPattern eq "PRBS23" ) {
     $pattern = "2^23-1";
   }
-  my $patt = sprintf( $prbsXML, $blockLen, $pattern );
+  my $patt = $self->stringBlockEncode( sprintf( $prbsXML, $blockLen, $pattern ) );
+  $self->iwrite(":DATA:SEQ:DEL 'Analyzer'");
+  $self->iwrite(":DATA:SEQ:NEW 'Analyzer'");
+  $self->iOPC(5);
   $self->iwrite(":DATA:SEQ:VAL 'Analyzer',$patt");
-
+  $self->iOPC(5);
+  $self->iwrite(":DATA:SEQ:BIND 'Analyzer','M2.DataIn'");
+  $self->iwrite(":DATA:SEQ:REST 'Analyzer'");
+  $self->iOPC(5);
 }
 
 sub stringBlockEncode {
@@ -251,7 +265,49 @@ sub stringBlockEncode {
   my $str  = shift;
 
   my $len = length($str);
-  return ( sprintf( "#3%d,%s", $len, $str ) );
+  return ( sprintf( "#3%d%s", $len, $str ) );
+}
+
+sub errorInsertion {
+  my $self    = shift;
+  my $errRate = shift;
+
+  if ( $errRate == 0 ) {
+    $self->iwrite(":OUTPut:EINSertion:STATe 'M2.DataOut',0");
+    return;
+  } else {
+    $self->iwrite(":OUTPut:EINSertion:MODE 'M2.DataOut',ERATio");
+    my $mag = log10($errRate);
+    $mag = floor( abs($mag) + 0.5 ) * ( $mag <=> 0 );
+    my $rate = "RM12";
+    if ( $mag == -1 ) {
+      $rate = "RM1";
+    } elsif ( $mag == -2 ) {
+      $rate = "RM2";
+    } elsif ( $mag == -3 ) {
+      $rate = "RM3";
+    } elsif ( $mag == -4 ) {
+      $rate = "RM4";
+    } elsif ( $mag == -5 ) {
+      $rate = "RM5";
+    } elsif ( $mag == -6 ) {
+      $rate = "RM6";
+    } elsif ( $mag == -7 ) {
+      $rate = "RM7";
+    } elsif ( $mag == -8 ) {
+      $rate = "RM8";
+    } elsif ( $mag == -9 ) {
+      $rate = "RM9";
+    } elsif ( $mag == -10 ) {
+      $rate = "RM10";
+    } elsif ( $mag == -11 ) {
+      $rate = "RM11";
+    }
+    $self->iwrite(":OUTPut:EINSertion:RATio 'M2.DataOut',$rate");
+    $self->iwrite(":OUTPut:EINSertion:STATe 'M2.DataOut',1");
+    $self->iOPC(5);
+    return;
+  }
 }
 
 sub amplitude_cm {
@@ -306,7 +362,10 @@ sub argCheck {
   if ( $descriptor->{argtype} == 'ENUM' ) {
     enumCheck( $arg, $descriptor->{argcheck} )
       || UsageError->throw(
-      { err => sprintf( "%s requires argument be one of %s", $mname, join( ",", @{ $descriptor->{argcheck} } ) ) } );
+      {
+        err => sprintf( "%s requires argument be one of %s", $mname, join( ",", @{ $descriptor->{argcheck} } ) )
+      }
+      );
   }
   return (OK);
 }
