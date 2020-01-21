@@ -1,10 +1,10 @@
 # -*- mode: perl -*-
 package Keysight_M8070A_32G;
 use Moose;
-use PDL;
 
 #use namespace::autoclean;
 use Exception::Class ('UsageError');
+#use PDL;
 
 use constant 'OK'  => 0;
 use constant 'ERR' => 1;
@@ -192,6 +192,7 @@ sub PGbitRate {
     return ($clock);
   }
   $self->clockFreq( $clock / 2 );
+  $self->iOPC(20);
 }
 
 my $prbsXML =
@@ -226,12 +227,12 @@ sub PGPRBSpattern {
   $self->iwrite(":DATA:SEQ:DELALL;");
   $self->iwrite(":DATA:SEQ:DEL 'Generator'");
   $self->iwrite(":DATA:SEQ:NEW 'Generator'");
-  $self->iOPC(5);
+  $self->iOPC(25);
   $self->iwrite( ":DATA:SEQ:VAL 'Generator'," . $patt );
-  $self->iOPC(5);
+  $self->iOPC(25);
   $self->iwrite(":DATA:SEQ:BIND 'Generator','M2.DataOut'");
   $self->iwrite(":DATA:SEQ:REST 'Generator'");
-  $self->iOPC(5);
+  $self->iOPC(25);
 }
 
 sub EDPRBSpattern {
@@ -252,12 +253,12 @@ sub EDPRBSpattern {
   my $patt = $self->stringBlockEncode( sprintf( $prbsXML, $blockLen, $pattern ) );
   $self->iwrite(":DATA:SEQ:DEL 'Analyzer'");
   $self->iwrite(":DATA:SEQ:NEW 'Analyzer'");
-  $self->iOPC(5);
+  $self->iOPC(25);
   $self->iwrite(":DATA:SEQ:VAL 'Analyzer',$patt");
-  $self->iOPC(5);
+  $self->iOPC(25);
   $self->iwrite(":DATA:SEQ:BIND 'Analyzer','M2.DataIn'");
   $self->iwrite(":DATA:SEQ:REST 'Analyzer'");
-  $self->iOPC(5);
+  $self->iOPC(25);
 }
 
 sub stringBlockEncode {
@@ -277,7 +278,7 @@ sub errorInsertion {
     return;
   } else {
     $self->iwrite(":OUTPut:EINSertion:MODE 'M2.DataOut',ERATio");
-    my $mag = log10($errRate);
+    my $mag = log($errRate)/log(10);
     $mag = floor( abs($mag) + 0.5 ) * ( $mag <=> 0 );
     my $rate = "RM12";
     if ( $mag == -1 ) {
