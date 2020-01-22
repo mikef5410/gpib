@@ -360,7 +360,7 @@ sub argCheck {
   return (OK) if ( !defined($arg) );
   my $descriptor = $instrMethods{$mname};
   return (OK) if ( !exists( $descriptor->{argcheck} ) );
-  if ( $descriptor->{argtype} == 'ENUM' ) {
+  if ( $descriptor->{argtype} eq 'ENUM' ) {
     enumCheck( $arg, $descriptor->{argcheck} )
       || UsageError->throw(
       {
