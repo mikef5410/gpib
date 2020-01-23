@@ -1,6 +1,7 @@
 # -*- mode: perl -*-
 package Keysight_M8070A_32G;
 use Moose;
+use Math::Libm ':all';
 
 #use namespace::autoclean;
 use Exception::Class ('UsageError');
