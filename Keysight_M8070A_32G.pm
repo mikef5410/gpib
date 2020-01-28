@@ -362,7 +362,7 @@ sub argCheck {
   my $descriptor = $instrMethods{$mname};
   return (OK) if ( !exists( $descriptor->{argcheck} ) );
   if ( $descriptor->{argtype} eq 'ENUM' ) {
-    enumCheck( $arg, $descriptor->{argcheck} )
+    (OK==enumCheck( $arg, $descriptor->{argcheck} ))
       || UsageError->throw(
       {
         err => sprintf( "%s requires argument be one of %s", $mname, join( ",", @{ $descriptor->{argcheck} } ) )
