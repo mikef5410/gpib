@@ -30,7 +30,15 @@ my %instrMethods = (
   clockFreq      => { scpi => ":SOURCE:FREQ 'M1.ClkGen'",      argtype => "NUMBER" },
   globalOutputsState => { scpi => ":OUTPUT:GLOBAL:STATE 'M1.System'", argtype => "BOOLEAN" },
   outputState        => { scpi => ":OUTPUT:STATE 'M2.DataOut'",       argtype => "BOOLEAN" },
-);
+  deemphasisUnit  => { scpi => ":OUTPUT:DEEMphasis:UNIT 'M2.DataOut'",argtype=>"ENUM", argcheck=>['DB','PCT'] },
+  deemphasisPre2  => { scpi => ":OUTPUT:DEEMphasis:PRECursor2 'M2.DataOut'",argtype=>"NUMBER" },                  
+  deemphasisPre1  => { scpi => ":OUTPUT:DEEMphasis:PRECursor1 'M2.DataOut'",argtype=>"NUMBER" },                  
+  deemphasisPost1  => { scpi => ":OUTPUT:DEEMphasis:POSTCursor1 'M2.DataOut'",argtype=>"NUMBER" },                  
+  deemphasisPost2  => { scpi => ":OUTPUT:DEEMphasis:POSTCursor2 'M2.DataOut'",argtype=>"NUMBER" },                  
+  deemphasisPost3  => { scpi => ":OUTPUT:DEEMphasis:POSTCursor3 'M2.DataOut'",argtype=>"NUMBER" },                  
+  deemphasisPost4  => { scpi => ":OUTPUT:DEEMphasis:POSTCursor4 'M2.DataOut'",argtype=>"NUMBER" },                  
+  deemphasisPost5  => { scpi => ":OUTPUT:DEEMphasis:POSTCursor5 'M2.DataOut'",argtype=>"NUMBER" },                  
+                   );
 
 my $onoffStateGeneric = sub {
   my $self  = shift;
@@ -141,6 +149,22 @@ sub scalarSettingGeneric {
   }
   $val = ( $val != 0 );
   $self->iwrite( "$subsys," . $val );
+}
+
+sub txDeemphasis {
+  my $self = shift;
+  my $taps = shift; #ref to array
+
+  if (scalar(@$taps) != 7) {
+    UsageError->throw({ err => sprintf( "txDeemphasis requires argument to be array ref of 7 tap values") } );
+  }
+  $self->deemphasisPre2($taps->[0]);
+  $self->deemphasisPre1($taps->[1]);
+  $self->deemphasisPost1($taps->[2]);
+  $self->deemphasisPost2($taps->[3]);
+  $self->deemphasisPost3($taps->[4]);
+  $self->deemphasisPost4($taps->[5]);
+  $self->deemphasisPost5($taps->[6]);
 }
 
 sub outputsON {
