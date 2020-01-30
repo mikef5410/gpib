@@ -37,7 +37,8 @@ my %instrMethods = (
   deemphasisPost2  => { scpi => ":OUTPUT:DEEMphasis:POSTCursor2 'M2.DataOut'",argtype=>"NUMBER" },                  
   deemphasisPost3  => { scpi => ":OUTPUT:DEEMphasis:POSTCursor3 'M2.DataOut'",argtype=>"NUMBER" },                  
   deemphasisPost4  => { scpi => ":OUTPUT:DEEMphasis:POSTCursor4 'M2.DataOut'",argtype=>"NUMBER" },                  
-  deemphasisPost5  => { scpi => ":OUTPUT:DEEMphasis:POSTCursor5 'M2.DataOut'",argtype=>"NUMBER" },                  
+  deemphasisPost5  => { scpi => ":OUTPUT:DEEMphasis:POSTCursor5 'M2.DataOut'",argtype=>"NUMBER" },
+  outputTransitionTime => { scpi => ":SOURCE:PULSe:TRANsition:FIXed 'M2.DataOut'",argtype=>"ENUM",argcheck=>['SMOOTH','MODERATE','STEEP',] },
                    );
 
 my $onoffStateGeneric = sub {
