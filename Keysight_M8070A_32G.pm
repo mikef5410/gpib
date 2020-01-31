@@ -35,13 +35,18 @@ my %instrMethods = (
   globalOutputsState => { scpi => ":OUTPUT:GLOBAL:STATE 'M1.System'", argtype => "BOOLEAN" },
   outputState        => { scpi => ":OUTPUT:STATE 'M2.DataOut'",       argtype => "BOOLEAN" },
   deemphasisUnit => { scpi => ":OUTPUT:DEEMphasis:UNIT 'M2.DataOut'", argtype => "ENUM", argcheck => [ 'DB', 'PCT' ] },
-  deemphasisPre2  => { scpi => ":OUTPUT:DEEMphasis:PRECursor2 'M2.DataOut'",  argtype => "NUMBER" },
-  deemphasisPre1  => { scpi => ":OUTPUT:DEEMphasis:PRECursor1 'M2.DataOut'",  argtype => "NUMBER" },
-  deemphasisPost1 => { scpi => ":OUTPUT:DEEMphasis:POSTCursor1 'M2.DataOut'", argtype => "NUMBER" },
-  deemphasisPost2 => { scpi => ":OUTPUT:DEEMphasis:POSTCursor2 'M2.DataOut'", argtype => "NUMBER" },
-  deemphasisPost3 => { scpi => ":OUTPUT:DEEMphasis:POSTCursor3 'M2.DataOut'", argtype => "NUMBER" },
-  deemphasisPost4 => { scpi => ":OUTPUT:DEEMphasis:POSTCursor4 'M2.DataOut'", argtype => "NUMBER" },
-  deemphasisPost5 => { scpi => ":OUTPUT:DEEMphasis:POSTCursor5 'M2.DataOut'", argtype => "NUMBER" },
+  deemphasisPre2       => { scpi => ":OUTPUT:DEEMphasis:PRECursor2 'M2.DataOut'",  argtype => "NUMBER" },
+  deemphasisPre1       => { scpi => ":OUTPUT:DEEMphasis:PRECursor1 'M2.DataOut'",  argtype => "NUMBER" },
+  deemphasisPost1      => { scpi => ":OUTPUT:DEEMphasis:POSTCursor1 'M2.DataOut'", argtype => "NUMBER" },
+  deemphasisPost2      => { scpi => ":OUTPUT:DEEMphasis:POSTCursor2 'M2.DataOut'", argtype => "NUMBER" },
+  deemphasisPost3      => { scpi => ":OUTPUT:DEEMphasis:POSTCursor3 'M2.DataOut'", argtype => "NUMBER" },
+  deemphasisPost4      => { scpi => ":OUTPUT:DEEMphasis:POSTCursor4 'M2.DataOut'", argtype => "NUMBER" },
+  deemphasisPost5      => { scpi => ":OUTPUT:DEEMphasis:POSTCursor5 'M2.DataOut'", argtype => "NUMBER" },
+  outputTransitionTime => {
+    scpi     => ":SOURCE:PULSe:TRANsition:FIXed 'M2.DataOut'",
+    argtype  => "ENUM",
+    argcheck => [ 'SMOOTH', 'MODERATE', 'STEEP', ]
+  },
 );
 
 my $onoffStateGeneric = sub {
