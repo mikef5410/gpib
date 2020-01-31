@@ -5,6 +5,10 @@ use Math::Libm ':all';
 
 #use namespace::autoclean;
 use Exception::Class ('UsageError');
+
+## no critic (ValuesAndExpressions::ProhibitAccessOfPrivateData)
+## no critic (BitwiseOperators)
+
 #use PDL;
 
 use constant 'OK'  => 0;
@@ -30,15 +34,15 @@ my %instrMethods = (
   clockFreq      => { scpi => ":SOURCE:FREQ 'M1.ClkGen'",      argtype => "NUMBER" },
   globalOutputsState => { scpi => ":OUTPUT:GLOBAL:STATE 'M1.System'", argtype => "BOOLEAN" },
   outputState        => { scpi => ":OUTPUT:STATE 'M2.DataOut'",       argtype => "BOOLEAN" },
-  deemphasisUnit  => { scpi => ":OUTPUT:DEEMphasis:UNIT 'M2.DataOut'",argtype=>"ENUM", argcheck=>['DB','PCT'] },
-  deemphasisPre2  => { scpi => ":OUTPUT:DEEMphasis:PRECursor2 'M2.DataOut'",argtype=>"NUMBER" },                  
-  deemphasisPre1  => { scpi => ":OUTPUT:DEEMphasis:PRECursor1 'M2.DataOut'",argtype=>"NUMBER" },                  
-  deemphasisPost1  => { scpi => ":OUTPUT:DEEMphasis:POSTCursor1 'M2.DataOut'",argtype=>"NUMBER" },                  
-  deemphasisPost2  => { scpi => ":OUTPUT:DEEMphasis:POSTCursor2 'M2.DataOut'",argtype=>"NUMBER" },                  
-  deemphasisPost3  => { scpi => ":OUTPUT:DEEMphasis:POSTCursor3 'M2.DataOut'",argtype=>"NUMBER" },                  
-  deemphasisPost4  => { scpi => ":OUTPUT:DEEMphasis:POSTCursor4 'M2.DataOut'",argtype=>"NUMBER" },                  
-  deemphasisPost5  => { scpi => ":OUTPUT:DEEMphasis:POSTCursor5 'M2.DataOut'",argtype=>"NUMBER" },                  
-                   );
+  deemphasisUnit => { scpi => ":OUTPUT:DEEMphasis:UNIT 'M2.DataOut'", argtype => "ENUM", argcheck => [ 'DB', 'PCT' ] },
+  deemphasisPre2  => { scpi => ":OUTPUT:DEEMphasis:PRECursor2 'M2.DataOut'",  argtype => "NUMBER" },
+  deemphasisPre1  => { scpi => ":OUTPUT:DEEMphasis:PRECursor1 'M2.DataOut'",  argtype => "NUMBER" },
+  deemphasisPost1 => { scpi => ":OUTPUT:DEEMphasis:POSTCursor1 'M2.DataOut'", argtype => "NUMBER" },
+  deemphasisPost2 => { scpi => ":OUTPUT:DEEMphasis:POSTCursor2 'M2.DataOut'", argtype => "NUMBER" },
+  deemphasisPost3 => { scpi => ":OUTPUT:DEEMphasis:POSTCursor3 'M2.DataOut'", argtype => "NUMBER" },
+  deemphasisPost4 => { scpi => ":OUTPUT:DEEMphasis:POSTCursor4 'M2.DataOut'", argtype => "NUMBER" },
+  deemphasisPost5 => { scpi => ":OUTPUT:DEEMphasis:POSTCursor5 'M2.DataOut'", argtype => "NUMBER" },
+);
 
 my $onoffStateGeneric = sub {
   my $self  = shift;
@@ -151,20 +155,69 @@ sub scalarSettingGeneric {
   $self->iwrite( "$subsys," . $val );
 }
 
+sub simpleSJ {    #(sjfreq, amplitude mUI,  onoff)
+  my $self      = shift;
+  my $freq      = shift;
+  my $amplitude = shift;
+  my $onoff     = shift || 1;
+
+  #LF PJ 0-1285UI, 100Hz to 10MHz
+  #HF PJ 0-1UI, 1kHz to 500MHz
+
+  my $lf = 0;
+
+  if ( $freq < 100 || $freq > 500e6 ) {
+    UsageError->throw( { err => sprintf( "SJ freq out of range: %g", $freq ) } );
+  }
+
+  if ( $amplitude > 1285000 ) {
+    UsageError->throw( { err => ( "SJ amplitude out of range: %g", $amplitude ) } );
+  }
+
+  if ( $amplitude == 0 && !$onoff ) {
+    $self->PJState(0);
+    $self->PJ1State(0);
+  }
+
+  if ( $freq <= 9.999e6 && $amplitude < 1285000 ) {    #We'll use LF PJ
+    $lf = 1;
+  } elsif ( $freq > 1000 && $amplitude < 1000 ) {      #Use HF PJ
+    $lf = 0;
+  } else {
+    UsageError->throw( { err => "Bad SJ combination of freq and amplitude" } );
+  }
+
+  $self->iwrite(":SOURCE:JITTer:HFRequency:UNIT 'M2.DataOut',UINTerval");
+  $self->iwrite(":SOURCE:JITTer:LFRequency:UNIT 'M2.DataOut',UINTerval");
+
+  if ($lf) {
+    $self->PJ1State(0);
+    $self->PJAmplitude( $amplitude / 1000.0 );
+    $self->PJFrequency($freq);
+    $self->PJState(1);
+  } else {
+    $self->PJState(0);
+    $self->PJ1Amplitude( $amplitude / 1000.0 );
+    $self->PJ1Frequency($freq);
+    $self->PJ1State(1);
+  }
+
+}
+
 sub txDeemphasis {
   my $self = shift;
-  my $taps = shift; #ref to array
+  my $taps = shift;    #ref to array
 
-  if (scalar(@$taps) != 7) {
-    UsageError->throw({ err => sprintf( "txDeemphasis requires argument to be array ref of 7 tap values") } );
+  if ( scalar(@$taps) != 7 ) {
+    UsageError->throw( { err => sprintf("txDeemphasis requires argument to be array ref of 7 tap values") } );
   }
-  $self->deemphasisPre2($taps->[0]);
-  $self->deemphasisPre1($taps->[1]);
-  $self->deemphasisPost1($taps->[2]);
-  $self->deemphasisPost2($taps->[3]);
-  $self->deemphasisPost3($taps->[4]);
-  $self->deemphasisPost4($taps->[5]);
-  $self->deemphasisPost5($taps->[6]);
+  $self->deemphasisPre2( $taps->[0] );
+  $self->deemphasisPre1( $taps->[1] );
+  $self->deemphasisPost1( $taps->[2] );
+  $self->deemphasisPost2( $taps->[3] );
+  $self->deemphasisPost3( $taps->[4] );
+  $self->deemphasisPost4( $taps->[5] );
+  $self->deemphasisPost5( $taps->[6] );
 }
 
 sub outputsON {
@@ -303,7 +356,7 @@ sub errorInsertion {
     return;
   } else {
     $self->iwrite(":OUTPut:EINSertion:MODE 'M2.DataOut',ERATio");
-    my $mag = log($errRate)/log(10);
+    my $mag = log($errRate) / log(10);
     $mag = floor( abs($mag) + 0.5 ) * ( $mag <=> 0 );
     my $rate = "RM12";
     if ( $mag == -1 ) {
@@ -386,7 +439,7 @@ sub argCheck {
   my $descriptor = $instrMethods{$mname};
   return (OK) if ( !exists( $descriptor->{argcheck} ) );
   if ( $descriptor->{argtype} eq 'ENUM' ) {
-    (OK==enumCheck( $arg, $descriptor->{argcheck} ))
+    ( OK == enumCheck( $arg, $descriptor->{argcheck} ) )
       || UsageError->throw(
       {
         err => sprintf( "%s requires argument be one of %s", $mname, join( ",", @{ $descriptor->{argcheck} } ) )
