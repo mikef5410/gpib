@@ -160,6 +160,55 @@ sub scalarSettingGeneric {
   $self->iwrite( "$subsys," . $val );
 }
 
+sub LFSJok {    #(sjfreq, amplitude mUI)
+  my $self = shift;
+  my $freq = shift;
+  my $ampl = shift;
+
+  my $maxJ = $self->maxLFJ($freq);
+  return (0) if ( !defined($maxJ) );
+  return ( $ampl <= $maxJ );
+}
+
+sub HFSJok {
+  my $self = shift;
+  my $freq = shift;
+  my $ampl = shift;
+
+  my $maxJ = $self->maxHFJ($freq);
+  return (0) if ( !defined($maxJ) );
+  return ( ( $ampl <= $maxJ ) ? 1 : 0 );
+}
+
+sub maxLFJ {
+  my $self = shift;
+  my $freq = shift;
+
+  return (undef) if ( $freq < 100 );
+  return (undef) if ( $freq > 5e6 );
+
+  my $rate = 2.0 * $self->clockFreq();
+  my $max  = 1000 * 123.5 * ( $rate / 1e9 );    #mUI
+
+  if ( $freq < 1.0e4 ) {
+    return ($max);
+  }
+
+  my $min = 1000 * 0.247 * ( $rate / 1e9 );        #mUI
+  my $m   = ( $min - $max ) / ( 5.0e6 - 1.0e4 );
+  my $k   = $min - ( $m * 5.0e6 );
+  return ( ( $m * $freq ) + $k );
+}
+
+sub maxHFSJ {
+  my $self = shift;
+  my $freq = shift;
+
+  return (undef) if ( $freq < 1000 );
+  return (undef) if ( $freq > 500e6 );
+  return (1000.0);
+}
+
 sub simpleSJ {    #(sjfreq, amplitude mUI,  onoff)
   my $self      = shift;
   my $freq      = shift;
@@ -175,18 +224,14 @@ sub simpleSJ {    #(sjfreq, amplitude mUI,  onoff)
     UsageError->throw( { err => sprintf( "SJ freq out of range: %g", $freq ) } );
   }
 
-  if ( $amplitude > 1285000 ) {
-    UsageError->throw( { err => ( "SJ amplitude out of range: %g", $amplitude ) } );
-  }
-
   if ( $amplitude == 0 && !$onoff ) {
     $self->PJState(0);
     $self->PJ1State(0);
   }
 
-  if ( $freq <= 9.999e6 && $amplitude < 1285000 ) {    #We'll use LF PJ
+  if ( $self->LFSJok( $freq, $amplitude ) ) {    #We'll use LF PJ
     $lf = 1;
-  } elsif ( $freq > 1000 && $amplitude < 1000 ) {      #Use HF PJ
+  } elsif ( $self->HFSJok( $freq, $amplitude ) ) {    #Use HF PJ
     $lf = 0;
   } else {
     UsageError->throw( { err => "Bad SJ combination of freq and amplitude" } );
