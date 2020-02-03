@@ -165,7 +165,7 @@ sub LFSJok {    #(sjfreq, amplitude mUI)
   my $freq = shift;
   my $ampl = shift;
 
-  my $maxJ = $self->maxLFJ($freq);
+  my $maxJ = $self->maxLFSJ($freq);
   return (0) if ( !defined($maxJ) );
   return ( $ampl <= $maxJ );
 }
@@ -175,12 +175,12 @@ sub HFSJok {
   my $freq = shift;
   my $ampl = shift;
 
-  my $maxJ = $self->maxHFJ($freq);
+  my $maxJ = $self->maxHFSJ($freq);
   return (0) if ( !defined($maxJ) );
   return ( ( $ampl <= $maxJ ) ? 1 : 0 );
 }
 
-sub maxLFJ {
+sub maxLFSJ {
   my $self = shift;
   my $freq = shift;
 
@@ -213,8 +213,8 @@ sub maxSJ {
   my $self = shift;
   my $freq = shift;
 
-  my $maxLJ = $self->maxLFJ($freq);
-  my $maxHJ = $self->maxHFJ($freq);
+  my $maxLJ = $self->maxLFSJ($freq);
+  my $maxHJ = $self->maxHFSJ($freq);
   if ( defined($maxLJ) && defined($maxHJ) ) {
     return ( ( $maxLJ >= $maxHJ ) ? $maxLJ : $maxHJ );
   }
