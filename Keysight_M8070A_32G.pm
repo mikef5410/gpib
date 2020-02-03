@@ -209,6 +209,21 @@ sub maxHFSJ {
   return (1000.0);
 }
 
+sub maxSJ {
+  my $self = shift;
+  my $freq = shift;
+
+  my $maxLJ = $self->maxLFJ($freq);
+  my $maxHJ = $self->maxHFJ($freq);
+  if ( defined($maxLJ) && defined($maxHJ) ) {
+    return ( ( $maxLJ >= $maxHJ ) ? $maxLJ : $maxHJ );
+  }
+
+  return ($maxLJ) if ( defined($maxLJ) );
+  return ($maxHJ) if ( defined($maxHJ) );
+  return (undef);
+}
+
 sub simpleSJ {    #(sjfreq, amplitude mUI,  onoff)
   my $self      = shift;
   my $freq      = shift;
