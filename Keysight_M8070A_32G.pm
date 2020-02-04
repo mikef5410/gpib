@@ -187,17 +187,14 @@ sub maxLFSJ {
   return (undef) if ( $freq < 100 );
   return (undef) if ( $freq > 5e6 );
 
-  my $rate = 2.0 * $self->clockFreq();
-  my $max  = 1000 * 123.5 * ( $rate / 1e9 );    #mUI
-
   if ( $freq < 1.0e4 ) {
-    return ($max);
+    return (1000.0);
   }
 
-  my $min = 1000 * 0.247 * ( $rate / 1e9 );        #mUI
-  my $m   = ( $min - $max ) / ( 5.0e6 - 1.0e4 );
-  my $k   = $min - ( $m * 5.0e6 );
-  return ( ( $m * $freq ) + $k );
+  my $rate = 2.0 * $self->clockFreq();
+  my $max  = 1000 * 1.235 * ( $rate / 1e3 ) / $freq;    #mUI
+
+  return ($max);
 }
 
 sub maxHFSJ {
@@ -206,7 +203,7 @@ sub maxHFSJ {
 
   return (undef) if ( $freq < 1000 );
   return (undef) if ( $freq > 500e6 );
-  return (1000.0);
+  return (1000.0);                                      #mUI
 }
 
 sub maxSJ {
@@ -230,18 +227,19 @@ sub simpleSJ {    #(sjfreq, amplitude mUI,  onoff)
   my $amplitude = shift;
   my $onoff     = shift || 1;
 
-  #LF PJ 0-1285UI, 100Hz to 10MHz
+  #printf("Set SJ @ %g Hz to %g UI\n",$freq,$amplitude/1000.0);
+  #LF PJ 0-1000UI, 100Hz to 10MHz
   #HF PJ 0-1UI, 1kHz to 500MHz
 
   my $lf = 0;
 
-  if ( $freq < 100 || $freq > 500e6 ) {
-    UsageError->throw( { err => sprintf( "SJ freq out of range: %g", $freq ) } );
-  }
-
   if ( $amplitude == 0 && !$onoff ) {
     $self->PJState(0);
     $self->PJ1State(0);
+  }
+
+  if ( $freq < 100 || $freq > 500e6 ) {
+    UsageError->throw( { err => sprintf( "SJ freq out of range: %g", $freq ) } );
   }
 
   if ( $self->LFSJok( $freq, $amplitude ) ) {    #We'll use LF PJ
