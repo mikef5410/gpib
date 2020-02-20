@@ -33,7 +33,7 @@ sub freq {
     return ( $self->iquery(":SOURCE:FREQUENCY:CW?") );
   } else {
     $self->iwrite(":SOURCE:FREQUENCY:CW $val;");
-    $self->iOPC(3);
+    #$self->iOPC(3);
   }
 }
 
@@ -46,7 +46,7 @@ sub ampl {
     return ( $self->iquery(":POWER?") );
   } else {
     $self->iwrite(":POWER $val dBm;");
-    $self->iOPC(3);
+    #$self->iOPC(3);
   }
 }
 
@@ -64,7 +64,7 @@ sub outputState {
       $s = ( $val != 0 );
     }
     $self->iwrite(":OUTPUT:STATE $s;");
-    $self->iOPC(3);
+    #$self->iOPC(3);
   }
 }
 
