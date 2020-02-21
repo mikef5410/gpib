@@ -321,6 +321,7 @@ sub setMuxMode {
   my $mode = shift;    # "NONe|MUX|DMUX|BOTH"
 
   $self->iwrite(":SOURCE:CONFigure:MINTegration 'M2.MuxMode',$mode");
+  $self->iOPC(45);
 }
 
 sub PGbitRate {
@@ -365,15 +366,21 @@ sub PGPRBSpattern {
     $pattern = "2^23-1";
   }
   my $patt = $self->stringBlockEncode( sprintf( $prbsXML, $blockLen, $pattern ) );
+
+  #$self->iclear();
+  #my @errs=$self->getErrors();
+
   $self->iwrite(":DATA:SEQ:DELALL;");
+  $self->iOPC(35);
   $self->iwrite(":DATA:SEQ:DEL 'Generator'");
+  $self->iOPC(35);
   $self->iwrite(":DATA:SEQ:NEW 'Generator'");
-  $self->iOPC(25);
+  $self->iOPC(35);
   $self->iwrite( ":DATA:SEQ:VAL 'Generator'," . $patt );
-  $self->iOPC(25);
+  $self->iOPC(35);
   $self->iwrite(":DATA:SEQ:BIND 'Generator','M2.DataOut'");
   $self->iwrite(":DATA:SEQ:REST 'Generator'");
-  $self->iOPC(25);
+  $self->iOPC(35);
 }
 
 sub EDPRBSpattern {
