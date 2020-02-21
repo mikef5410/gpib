@@ -333,6 +333,8 @@ sub iOPC {
     #If we get here, we timed out.
     $self->log($self->logsubsys . ".IOTrace")->error( shortmess("IOPC Timeout") );
 
+    my @errs = $self->getErrors();
+    $self->log($self->logsubsys . ".IOTrace")->warning(join("\n",@errs));
     #TimeoutError->throw( { err => 'iOPC timeout' });
     return (-1);
   }
