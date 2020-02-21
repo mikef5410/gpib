@@ -55,7 +55,7 @@ probably need to overload this function.
 
 #Calling it XiOPC to disable this method and use the one in GPIBWrap
 sub iOPC {
-  my $self = shift;
+  my $self    = shift;
   my $timeout = shift || $self->defaultTimeout;    #seconds (fractional ok)
   my $ret;
 
@@ -63,8 +63,8 @@ sub iOPC {
 
   $self->log('Agilent86100.IOTrace')->info( sprintf( "iOPC %g", $timeout ) );
   return if ( !defined( $self->gpib ) );
-  $self->iwrite("*ESE 255\n");    #Propagate OPC up to STB
-  $self->iwrite("*OPC?\n");       #Tell the instrument we're interested in OPC
+  $self->iwrite("*ESE 255\n");                     #Propagate OPC up to STB
+  $self->iwrite("*OPC?\n");                        #Tell the instrument we're interested in OPC
   my $tstart = [gettimeofday];
 
   #Poll STB for ESB bit, then read ESR for OPC
@@ -74,9 +74,9 @@ sub iOPC {
       my $stb = $self->ireadstb();
 
       #$self->log('Agilent86100.IOTrace')->info(sprintf("STB: 0x%x\n",$stb));
-      if ( $stb & ( 1 << 4 ) ) {    #MAV bit (4) set?
-        my $x = $self->iread();     #$self->log('Agilent86100.IOTrace')->info(sprintf("OPC Read: 0x%x\n",$x));
-        return (1);                 #Good to go...
+      if ( $stb & ( 1 << 4 ) ) {                   #MAV bit (4) set?
+        my $x = $self->iread();    #$self->log('Agilent86100.IOTrace')->info(sprintf("OPC Read: 0x%x\n",$x));
+        return (1);                #Good to go...
       }
       my $sleepTime = $timeout - tv_interval($tstart);
       if ( $sleepTime <= 0 ) {
@@ -381,7 +381,7 @@ sub Range_set {
 ###############################################################################
 sub Scale_set {
   my ($self) = shift;
-  my ($val) = shift || '200E-12';    # ps
+  my ($val)  = shift || '200E-12';    # ps
 
   $self->iwrite(":TIM:SCAL $val");
 
@@ -441,13 +441,13 @@ sub Time_ref {
 ###############################################################################
 sub Time_pos {
   my ($self) = shift;
-  my ($val) = shift || '24.0E-9';    # Unit: sec
+  my ($val)  = shift || '24.0E-9';    # Unit: sec
 
   # Set Timebase interval between trigger and reference point.
 
   $self->iwrite(":TIM:POS $val");
 
-  return 0;    # Return to value user
+  return 0;                           # Return to value user
 
 }
 
@@ -862,13 +862,13 @@ sub Logic0_Level {
 #
 ###############################################################################
 sub Rise_Fall_Threshold {
-  my ($self) = shift;
+  my ($self)      = shift;
   my ($threshold) = shift || "805020";    # "905010" or "805020"
 
   $threshold =~ m/(\d\d)(\d\d)(\d\d)/;
-  my ($upper) = $1 || 80;    # Values in percent
-  my ($mid)   = $2 || 50;    # Values in percent
-  my ($lower) = $3 || 20;    # Values in percent
+  my ($upper) = $1 || 80;                 # Values in percent
+  my ($mid)   = $2 || 50;                 # Values in percent
+  my ($lower) = $3 || 20;                 # Values in percent
 
   $self->iwrite(":MEAS:DEF THR,PERC,$upper,$mid,$lower");
 
@@ -1780,7 +1780,7 @@ sub Set_Ch_Att {
 ###############################################################################
 sub Set_Trigger_Source {
   my ($self) = shift;
-  my ($sr) = shift || "FPAN";    # The source of trigger
+  my ($sr)   = shift || "FPAN";    # The source of trigger
 
   $sr = (
     $sr =~ /fpan/i ? "FPAN"
@@ -1798,7 +1798,7 @@ sub Set_Trigger_Source {
 ###############################################################################
 sub Set_Trigger_Slope {
   my ($self) = shift;
-  my ($sl) = shift || "POS";    # The slope of the edge on which to trigger
+  my ($sl)   = shift || "POS";    # The slope of the edge on which to trigger
 
   $sl = ( $sl =~ /pos/i ? "POS" : "NEG" );
 
@@ -1811,7 +1811,7 @@ sub Set_Trigger_Slope {
 ###############################################################################
 sub Set_Trigger_Hys {
   my ($self) = shift;
-  my ($th) = shift || "NORM";    # Selection the trigger hysteresis
+  my ($th)   = shift || "NORM";    # Selection the trigger hysteresis
 
   $th = ( $th =~ /norm/i ? "NORM" : "HSEN" );
 
@@ -1827,7 +1827,7 @@ sub Set_Trigger_Hys {
 ###############################################################################
 sub Set_Trigger_BW {
   my ($self) = shift;
-  my ($bw) = shift || "HIGH";    # The slope of the edge on which to trigger
+  my ($bw)   = shift || "HIGH";    # The slope of the edge on which to trigger
 
   $bw = (
     $bw =~ /high/i
@@ -1858,7 +1858,7 @@ sub Set_Trigger_Level {
 ###############################################################################
 sub Set_Trigger_Length {
   my ($self) = shift;
-  my ($l) = shift || 127;    # The length of the pattern trigger 127 for 2^7-1
+  my ($l)    = shift || 127;    # The length of the pattern trigger 127 for 2^7-1
 
   $self->iwrite(":TRIG:PLEN $l");
 }
@@ -1950,7 +1950,7 @@ sub Save_Image {
   my ($area)     = shift || "SCR";            # Store screen by default
   my ($image)    = shift || "INV";            # NORMal/INVert/MONochrome
 
-  $area = ( $area =~ /grat/i ? "GRAT" : "SCR" );    # RegEx to clean up user param
+  $area  = ( $area =~ /grat/i ? "GRAT" : "SCR" );    # RegEx to clean up user param
   $image = (
     $image =~ /norm/i
     ? "NORM"
@@ -1998,7 +1998,7 @@ sub Save_Waveform {
 #
 ###############################################################################
 sub Save_GIF {
-  my ($self) = shift;
+  my ($self)     = shift;
   my ($filename) = shift || "default.gif";    # Store incomming string
 
   $self->iwrite(":DISPlay:DATA? GIF");
@@ -2021,7 +2021,7 @@ sub Save_GIF {
 ###############################################################################
 sub CD {    # Disk operaiton
   my ($self) = shift;
-  my ($dir) = shift || "c:\\User Files";    # Store incoming string
+  my ($dir)  = shift || "c:\\User Files";    # Store incoming string
 
   $self->iwrite(":DISK:CDIR \"$dir\"");
 
@@ -2188,7 +2188,7 @@ sub Histogram_Mode {
 ###############################################################################
 sub Histogram_Source {
   my $self = shift;
-  my $src = shift || 3;    # Channel
+  my $src  = shift || 3;    # Channel
 
   $self->iwrite(":HIST:SOUR CHAN$src");
   return 0;
@@ -2200,7 +2200,7 @@ sub Histogram_Source {
 #
 ###############################################################################
 sub Histogram_Border {
-  my ($self) = shift;
+  my ($self)   = shift;
   my ($border) = shift || 'toggle';    # Argument
 
   if ( $border =~ /toggle/ ) {
@@ -2340,7 +2340,7 @@ sub Histogram_ppos {
 sub Set_Waveform_Source {
 
   # set the waveform source
-  my $self = shift;
+  my $self   = shift;
   my $source = shift || 'CHAN1';
 
   $self->iwrite(":WAVeform:SOURce $source");
@@ -2549,7 +2549,7 @@ sub _Block2Integer {
                     # byte count from
                     # the digits
 
-  foreach my $digit # construct the
+  foreach my $digit                          # construct the
     ( unpack "xxc$bdigits", $bytebuffer )    # bytecount:
   {
     $bytecount .= chr($digit);
@@ -2566,7 +2566,7 @@ sub _Block2Integer {
       $bytebuffer,                           # ...from the buffer
       2 + $bdigits,                          # ...starting at
       $bytecount
-      )                                      # ...this long
+    )                                        # ...this long
   );
 
   return 0;                                  # success
@@ -2734,7 +2734,7 @@ sub DutyCycle2 {
     $self->iwrite(":MEAS:RES?");
     my ($string) = $self->iread();
     chomp($string);
-    my (@data) = split /,/, $string;
+    my (@data)   = split /,/, $string;
     my ($meas_n) = ( $#data + 1 ) / 8;
     for my $idx ( 0 .. $meas_n - 1 ) {
       next unless $data[ $idx * 8 ] =~ /Duty cycle\($ch\)/;
@@ -2766,7 +2766,7 @@ sub Trise2 {
     $self->iwrite(":MEAS:RES?");
     my ($string) = $self->iread();
     chomp($string);
-    my (@data) = split /,/, $string;
+    my (@data)   = split /,/, $string;
     my ($meas_n) = ( $#data + 1 ) / 8;
     for my $idx ( 0 .. $meas_n - 1 ) {
       next unless $data[ $idx * 8 ] =~ /Rise time\($ch\)/;
@@ -2797,7 +2797,7 @@ sub Vampl2 {
     $self->iwrite(":MEAS:RES?");
     my ($string) = $self->iread();
     chomp($string);
-    my (@data) = split /,/, $string;
+    my (@data)   = split /,/, $string;
     my ($meas_n) = ( $#data + 1 ) / 8;
     for my $idx ( 0 .. $meas_n - 1 ) {
       next unless $data[ $idx * 8 ] =~ /V amptd\($ch\)/;
@@ -3039,8 +3039,8 @@ sub Meas_Result {
 sub Top_Base() {
   my ($self) = shift;
   my ($type) = shift || "STAN";    # AUTO (STANDARD) or Custom (sybtax: '1.1;0.1')
-  my ($top_volt);     # 1.1 is the top voltage in Volt
-  my ($base_volt);    # 0.1 is the base voltage in Volt
+  my ($top_volt);                  # 1.1 is the top voltage in Volt
+  my ($base_volt);                 # 0.1 is the base voltage in Volt
 
   if ( $type =~ /stan/i ) {
     $self->iwrite(':MEAS:DEF TOPB, STAN');

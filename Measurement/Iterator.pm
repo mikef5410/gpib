@@ -5,7 +5,7 @@ use Moose;
 use namespace::autoclean;
 
 has 'filter' => ( is => 'rw', default => sub { return (@_); } );
-has 'done' => ( is => 'rw', isa => 'Bool', default => 0 );
+has 'done'   => ( is => 'rw', isa     => 'Bool', default => 0 );
 
 #return next value or undef
 sub next {
@@ -56,7 +56,7 @@ sub reset {
 
 sub nitems {
   my $self = shift;
-  return(scalar(@{$self->values}));
+  return ( scalar( @{ $self->values } ) );
 }
 
 __PACKAGE__->meta->make_immutable;
@@ -69,14 +69,14 @@ use namespace::autoclean;
 extends 'Iterator';
 
 has 'values' => ( is => 'rw', isa => 'HashRef' );
-has '_keys'   => ( is => 'rw',  isa => 'Maybe[ArrayRef]', default => undef );
+has '_keys'  => ( is => 'rw', isa => 'Maybe[ArrayRef]', default => undef );
 has 'index'  => ( is => 'rw', isa => 'Int', default => -1 );
 
 sub BUILD {
   my $self = shift;
 
   #print join(",", keys(%{$self->values}));
-  my @k = keys( %{ $self->values } ) ;
+  my @k = keys( %{ $self->values } );
   $self->{_keys} = \@k;
 }
 
@@ -101,7 +101,7 @@ sub reset {
 
 sub nitems {
   my $self = shift;
-  return(scalar(@{$self->_keys}));
+  return ( scalar( @{ $self->_keys } ) );
 }
 
 __PACKAGE__->meta->make_immutable;
@@ -115,20 +115,20 @@ use namespace::autoclean;
 
 extends 'Iterator';
 
-has 'start'          => ( is => 'ro', isa => 'Num',         );
-has 'stop'           => ( is => 'ro', isa => 'Num',         );
-has 'npts'           => ( is => 'ro', isa => 'Maybe[Num]',  );
-has 'increment'      => ( is => 'ro', isa => 'Maybe[Num]',  );
-has 'index'          => ( is => 'ro', isa => 'Int',        default => -1 );
-has '_npts_specified' => ( is => 'ro',isa => 'Bool',       default => 0 );
+has 'start'           => ( is => 'ro', isa => 'Num', );
+has 'stop'            => ( is => 'ro', isa => 'Num', );
+has 'npts'            => ( is => 'ro', isa => 'Maybe[Num]', );
+has 'increment'       => ( is => 'ro', isa => 'Maybe[Num]', );
+has 'index'           => ( is => 'ro', isa => 'Int', default => -1 );
+has '_npts_specified' => ( is => 'ro', isa => 'Bool', default => 0 );
 
 sub BUILD {
   my $self = shift;
-  $self->{_npts_specified}=1 if ( defined( $self->npts ) );
-  if ($self->{_npts_specified}) {
-    $self->{increment} = ( (  $self->stop - $self->start ) / ($self->npts - 1) );
+  $self->{_npts_specified} = 1 if ( defined( $self->npts ) );
+  if ( $self->{_npts_specified} ) {
+    $self->{increment} = ( ( $self->stop - $self->start ) / ( $self->npts - 1 ) );
   } else {
-    $self->{npts} = 1 + floor( ( ( $self->stop - $self->start )) / $self->increment );
+    $self->{npts} = 1 + floor( ( ( $self->stop - $self->start ) ) / $self->increment );
   }
 }
 
@@ -136,8 +136,8 @@ sub next {
   my $self = shift;
 
   return (undef) if ( $self->done );
-  $self->{index}=( $self->index + 1 );
-  if ( $self->index > ($self->npts-1) ) {
+  $self->{index} = ( $self->index + 1 );
+  if ( $self->index > ( $self->npts - 1 ) ) {
     $self->done(1);
     return (undef);
   }
@@ -146,13 +146,13 @@ sub next {
 
 sub reset {
   my $self = shift;
-  $self->{index}=-1;
+  $self->{index} = -1;
   $self->done(0);
 }
 
 sub nitems {
   my $self = shift;
-  return($self->npts);
+  return ( $self->npts );
 }
 
 __PACKAGE__->meta->make_immutable;
@@ -166,20 +166,19 @@ use namespace::autoclean;
 
 extends 'Iterator';
 
-
 has 'start'   => ( is => 'ro', isa => 'Num' );
 has 'stop'    => ( is => 'ro', isa => 'Num' );
 has 'npts'    => ( is => 'ro', isa => 'Num', default => 101 );
 has 'logbase' => ( is => 'ro', isa => 'Num', default => 10 );
 has 'index'   => ( is => 'ro', isa => 'Int', default => -1 );
 has 'span'    => ( is => 'ro', isa => 'Num', default => 0 );
-has '_dir'     => ( is => 'ro', isa => 'Num', default => 1.0 );
+has '_dir'    => ( is => 'ro', isa => 'Num', default => 1.0 );
 
 sub BUILD {
   my $self = shift;
 
-  $self->{span} = ( abs( $self->stop - $self->start ) );
-  $self->{_logstep} = ( $self->_logb($self->stop) - $self->_logb($self->start) ) / ($self->npts - 1);
+  $self->{span}     = ( abs( $self->stop - $self->start ) );
+  $self->{_logstep} = ( $self->_logb( $self->stop ) - $self->_logb( $self->start ) ) / ( $self->npts - 1 );
 }
 
 sub _logb {
@@ -197,19 +196,19 @@ sub next {
     $self->done(1);
     return (undef);
   }
-  $self->{index}=$ix;
-  return ( $self->start * pow($self->logbase, ($ix * $self->{_logstep}) ));
+  $self->{index} = $ix;
+  return ( $self->start * pow( $self->logbase, ( $ix * $self->{_logstep} ) ) );
 }
 
 sub reset {
   my $self = shift;
   $self->done(0);
-  $self->{index}=-1;
+  $self->{index} = -1;
 }
 
 sub nitems {
   my $self = shift;
-  return($self->ntps);
+  return ( $self->ntps );
 }
 
 __PACKAGE__->meta->make_immutable;

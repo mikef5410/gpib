@@ -15,7 +15,7 @@ our $jbertAddr = "hpib,14";
 
 #vxi_startinterruptserver();
 our $jbertIF = vxi_open( address => $langpib, device => $jbertAddr );
-our $jbert = Agilent_N4903A->new( gpib => $jbertIF );
+our $jbert   = Agilent_N4903A->new( gpib => $jbertIF );
 
 my $name = $jbert->id();
 print("$name\n");

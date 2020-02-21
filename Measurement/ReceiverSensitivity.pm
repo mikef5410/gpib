@@ -58,8 +58,8 @@ sub measureSensitivity {
     $jbert->amplitude_cm( $a / 1000, $jVoffs );
     my $ber = $jbert->BERtime($bertime);
     print("$a $bertime $ber\n") if ($verbose);
-    next if ( $ber < 0 );    #No sync
-    if ( $ber == 0 ) {    #No errors
+    next                        if ( $ber < 0 );    #No sync
+    if ( $ber == 0 ) {                              #No errors
       $bertime *= 2;
       last if ( $bertime >= $maxTime );
       $a -= $inc;
@@ -71,7 +71,7 @@ sub measureSensitivity {
       }
     }
     last if ( $ber < 1E-10 && $ber >= 0 );
-    $inc = int( 0.5 + $a / 10 );    #Take larger steps as amplitude gets larger
+    $inc = int( 0.5 + $a / 10 );                    #Take larger steps as amplitude gets larger
   }
   my $bers       = pdl(@berlist);
   my $amplitudes = pdl(@ampls);
@@ -82,8 +82,7 @@ sub measureSensitivity {
   my ( $iampl, $err );
   try {
     ( $iampl, $err ) = PDL::Primitive::interpolate( pdl( 1e-3, 1e-4, 1e-12 ), $bers, $amplitudes );
-  }
-  catch {
+  } catch {
     print("Interpolation error at $vcm V.\n");
     print $amplitudes, "\n";
     print $bers,       "\n";

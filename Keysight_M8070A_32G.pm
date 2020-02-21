@@ -320,7 +320,10 @@ sub setMuxMode {
   my $self = shift;
   my $mode = shift;    # "NONe|MUX|DMUX|BOTH"
 
-  $self->iwrite(":SOURCE:CONFigure:MINTegration 'M2.MuxMode',$mode");
+  my $curmode = $self->iquery(":SOURCE:CONFigure:MINTegration? 'M2.MuxMode'");
+  if ( uc($curmode) ne uc($mode) ) {
+    $self->iwrite(":SOURCE:CONFigure:MINTegration 'M2.MuxMode',$mode");
+  }
   $self->iOPC(45);
 }
 

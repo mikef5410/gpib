@@ -15,7 +15,7 @@ use Generic_Instrument;
 #Get a conenction to the instrument...
 # this is a little clunky. I need to streamline it a little.
 my $iface = vxi_open( address => "10.13.50.25", device => "inst0" );
-my $sg = Generic_Instrument->new( gpib => $iface );
+my $sg    = Generic_Instrument->new( gpib => $iface );
 
 # iquery is the same as iwrite, followed by iread
 my $id = $sg->iquery("*IDN?");

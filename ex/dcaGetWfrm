@@ -19,7 +19,7 @@ use File::Basename;
 
 use Agilent_86100;
 
-my $chan = "DIFF1";
+my $chan  = "DIFF1";
 my $scope = Agilent_86100->new( connectString => "VXI11::dca-1::inst0" );
 
 #Log::Log4perl->get_logger("GPIBWrap.IOTrace")->level($INFO);
@@ -84,7 +84,7 @@ sub getFloat {                     #No worky
   while ( length($tdata) < $len ) {    #Message Available?
     print( STDERR "." ) if ( $count++ % 1000 == 0 );
     my $dat = $scope->iread( bufferlen => 4096, autochomp => 0, termchrset => 0 );
-    my $nb = $scope->bytes_read;
+    my $nb  = $scope->bytes_read;
     last if ( $nb <= 0 );
     if ( $nb != 256 ) {
       printf( "Hey got %d bytes\n", $scope->bytes_read );

@@ -3,38 +3,38 @@
 use lib("..");
 use Measurement::Iterator;
 use Data::Dumper qw(Dumper);
+
 #use Iterator::Hash;
 #use Iterator::Array;
 
-my $x=Iterator->new();
-my @ary=qw(A B C D);
-my %hash=(A=>'a', B=>'b', C=>'c', D=>'d', E=>'e');
+my $x    = Iterator->new();
+my @ary  = qw(A B C D);
+my %hash = ( A => 'a', B => 'b', C => 'c', D => 'd', E => 'e' );
 
-my $hiter=Iterator::Hash->new(values=>\%hash);
-my $aiter=Iterator::Array->new(values=>\@ary);
+my $hiter = Iterator::Hash->new( values => \%hash );
+my $aiter = Iterator::Array->new( values => \@ary );
 
-while (my $val = $hiter->next()) {
+while ( my $val = $hiter->next() ) {
   print("$val => $hash{$val}\n");
 }
 
-while (my $val = $aiter->next()) {
+while ( my $val = $aiter->next() ) {
   print("$val\n");
 }
 
-my $linIter=Iterator::Linspace->new(start=>5, stop=>50, npts=>10);
-while (my $val = $linIter->next()) {
-  print($val,"\n");
+my $linIter = Iterator::Linspace->new( start => 5, stop => 50, npts => 10 );
+while ( my $val = $linIter->next() ) {
+  print( $val, "\n" );
 }
 
 print("\n");
 
-$linIter=Iterator::Linspace->new(start=>15, stop=>5, increment=>-0.5);
-while (my $val = $linIter->next()) {
-  print($val,"\n");
+$linIter = Iterator::Linspace->new( start => 15, stop => 5, increment => -0.5 );
+while ( my $val = $linIter->next() ) {
+  print( $val, "\n" );
 }
 
-
-$logIter=Iterator::Logspace->new(start=>100, stop=>1000, npts=>10);
-while (my $val=$logIter->next()) {
-  print("$val","\n");
+$logIter = Iterator::Logspace->new( start => 100, stop => 1000, npts => 10 );
+while ( my $val = $logIter->next() ) {
+  print( "$val", "\n" );
 }

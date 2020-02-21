@@ -160,7 +160,7 @@ sub ilock {
 
   return if ( !defined($self) );
 
-  $self->log($self->logsubsys . ".IOTrace")->info( sprintf( "ilock %s", $wait ) );
+  $self->log( $self->logsubsys . ".IOTrace" )->info( sprintf( "ilock %s", $wait ) );
   return if ( !defined( $self->gpib ) );
 
 SWITCH: {
@@ -196,7 +196,7 @@ sub iwrite {
 
   return if ( !defined($self) );
 
-  $self->log($self->logsubsys . ".IOTrace")->info( sprintf( "iwrite %s", $arg ) );
+  $self->log( $self->logsubsys . ".IOTrace" )->info( sprintf( "iwrite %s", $arg ) );
   return if ( !defined( $self->gpib ) );
 
   chomp($arg);
@@ -231,7 +231,7 @@ sub iread {
   return if ( !defined($self) );
   if ( !defined( $self->gpib ) ) {
 
-    $self->log($self->logsubsys . ".IOTrace")->info( sprintf("iread") );
+    $self->log( $self->logsubsys . ".IOTrace" )->info( sprintf("iread") );
     return ("");
   }
 
@@ -240,14 +240,14 @@ SWITCH: {
       ( $self->{bytes_read}, my $in, $self->{reason} ) =
         $self->gpib()->vxi_read(@_);
 
-      $self->log($self->logsubsys . ".IOTrace")->info( sprintf( "iread -> %s", $in ) );
+      $self->log( $self->logsubsys . ".IOTrace" )->info( sprintf( "iread -> %s", $in ) );
       return ($in);
       last(SWITCH);
     }
     if ( $self->gpib()->isa("RPCINST") ) {
       my $in = $self->gpib()->iread(@_);
 
-      $self->log($self->logsubsys . ".IOTrace")->info( sprintf( "iread -> %s", $in ) );
+      $self->log( $self->logsubsys . ".IOTrace" )->info( sprintf( "iread -> %s", $in ) );
       return ($in);
       last(SWITCH);
     }
@@ -271,7 +271,7 @@ sub iquery {
 
   return if ( !defined($self) );
 
-  $self->log($self->logsubsys . ".IOTrace")->info( sprintf( "iquery %s", $arg ) );
+  $self->log( $self->logsubsys . ".IOTrace" )->info( sprintf( "iquery %s", $arg ) );
   return if ( !defined( $self->gpib ) );
 
   $self->iwrite($arg);
@@ -297,17 +297,17 @@ probably need to overload this function.
 =cut
 
 sub iOPC {
-  my $self = shift;
+  my $self    = shift;
   my $timeout = shift || $self->defaultTimeout;    #seconds (fractional ok)
   my $ret;
 
   return if ( !defined($self) );
 
-  $self->log($self->logsubsys . ".IOTrace")->info( sprintf( "iOPC %g", $timeout ) );
+  $self->log( $self->logsubsys . ".IOTrace" )->info( sprintf( "iOPC %g", $timeout ) );
   return if ( !defined( $self->gpib ) );
-  $self->iwrite("*ESE 255");    #Propagate OPC up to STB
+  $self->iwrite("*ESE 255");                       #Propagate OPC up to STB
   $self->iwrite("*CLS");
-  $self->iwrite("*OPC");        #Tell the instrument we're interested in OPC
+  $self->iwrite("*OPC");                           #Tell the instrument we're interested in OPC
   my $tstart = [gettimeofday];
 
   #Poll STB for ESB bit, then read ESR for OPC
@@ -315,12 +315,12 @@ sub iOPC {
   if ($timeout) {
     while ( tv_interval($tstart) <= $timeout ) {
       my $stb = $self->ireadstb();
-      if ( $stb & ( 1 << 5 ) ) {    #Event status bit set?
-        my $esr = $self->iquery("*ESR?") || 0;    #Read ESR
-        if ( $esr & 0x1 ) {                       #OPC set?
+      if ( $stb & ( 1 << 5 ) ) {                   #Event status bit set?
+        my $esr = $self->iquery("*ESR?") || 0;     #Read ESR
+        if ( $esr & 0x1 ) {                        #OPC set?
           return (1);
         }
-        usleep(500000);                           # 500ms sleep
+        usleep(500000);                            # 500ms sleep
       }
       my $sleepTime = $timeout - tv_interval($tstart);
       if ( $sleepTime <= 0 ) {
@@ -331,10 +331,11 @@ sub iOPC {
     }    #While timeout
 
     #If we get here, we timed out.
-    $self->log($self->logsubsys . ".IOTrace")->error( shortmess("IOPC Timeout") );
+    $self->log( $self->logsubsys . ".IOTrace" )->error( shortmess("IOPC Timeout") );
 
     my @errs = $self->getErrors();
-    $self->log($self->logsubsys . ".IOTrace")->warning(join("\n",@errs));
+    $self->log( $self->logsubsys . ".IOTrace" )->warning( join( "\n", @errs ) );
+
     #TimeoutError->throw( { err => 'iOPC timeout' });
     return (-1);
   }
@@ -372,7 +373,7 @@ sub id {
 
   return if ( !defined($self) );
 
-  $self->log($self->logsubsys . ".IOTrace")->info( sprintf("id") );
+  $self->log( $self->logsubsys . ".IOTrace" )->info( sprintf("id") );
   return if ( !defined( $self->gpib ) );
 
   return ( $self->iquery("*IDN?") );
@@ -393,7 +394,7 @@ sub icreate_intr_chan {
 
   return if ( !defined($self) );
 
-  $self->log($self->logsubsys . ".IOTrace")->info( sprintf("icreate_intr_chan") );
+  $self->log( $self->logsubsys . ".IOTrace" )->info( sprintf("icreate_intr_chan") );
   return if ( !defined( $self->gpib ) );
 
 SWITCH: {
@@ -425,7 +426,7 @@ sub ireadstb {
   return if ( !defined($self) );
   if ( !defined( $self->gpib ) ) {
 
-    $self->log($self->logsubsys . ".IOTrace")->info( sprintf("ireadstb") );
+    $self->log( $self->logsubsys . ".IOTrace" )->info( sprintf("ireadstb") );
     return (0);
   }
   my $rval = 0;
@@ -434,14 +435,14 @@ SWITCH: {
     if ( $self->gpib()->isa("VXI11::Client") ) {
       $rval = ( $self->gpib()->vxi_readstatusbyte() )[1];
 
-      $self->log($self->logsubsys . ".IOTrace")->info( sprintf( "ireadstb -> 0x%x", $rval ) );
+      $self->log( $self->logsubsys . ".IOTrace" )->info( sprintf( "ireadstb -> 0x%x", $rval ) );
       return ($rval);
       last(SWITCH);
     }
     if ( $self->gpib()->isa("RPCINST") ) {
       $rval = $self->gpib()->istatus();
 
-      $self->log($self->logsubsys . ".IOTrace")->info( sprintf( "ireadstb -> 0x%x", $rval ) );
+      $self->log( $self->logsubsys . ".IOTrace" )->info( sprintf( "ireadstb -> 0x%x", $rval ) );
       return ($rval);
       last(SWITCH);
     }
@@ -465,7 +466,7 @@ sub ienablesrq {
 
   return if ( !defined($self) );
 
-  $self->log($self->logsubsys . ".IOTrace")->info( sprintf( "ienablesrq %s", $handle ) );
+  $self->log( $self->logsubsys . ".IOTrace" )->info( sprintf( "ienablesrq %s", $handle ) );
   return if ( !defined( $self->gpib ) );
 
 SWITCH: {
@@ -496,7 +497,7 @@ sub iwai {
 
   return if ( !defined($self) );
 
-  $self->log($self->logsubsys . ".IOTrace")->info( sprintf("iwai") );
+  $self->log( $self->logsubsys . ".IOTrace" )->info( sprintf("iwai") );
   return if ( !defined( $self->gpib ) );
 
 SWITCH: {
@@ -527,7 +528,7 @@ sub idestroy_intr_chan {
 
   return if ( !defined($self) );
 
-  $self->log($self->logsubsys . ".IOTrace")->info( sprintf("idestroy_intr_chan") );
+  $self->log( $self->logsubsys . ".IOTrace" )->info( sprintf("idestroy_intr_chan") );
   return if ( !defined( $self->gpib ) );
 
 SWITCH: {
@@ -558,7 +559,7 @@ sub iabort {
 
   return if ( !defined($self) );
 
-  $self->log($self->logsubsys . ".IOTrace")->info( sprintf("iabort") );
+  $self->log( $self->logsubsys . ".IOTrace" )->info( sprintf("iabort") );
   return if ( !defined( $self->gpib ) );
 
 SWITCH: {
@@ -589,7 +590,7 @@ sub iclear {
 
   return if ( !defined($self) );
 
-  $self->log($self->logsubsys . ".IOTrace")->info( sprintf("iclear") );
+  $self->log( $self->logsubsys . ".IOTrace" )->info( sprintf("iclear") );
   return if ( !defined( $self->gpib ) );
 
 SWITCH: {
@@ -620,7 +621,7 @@ sub itrigger {
 
   return if ( !defined($self) );
 
-  $self->log($self->logsubsys . ".IOTrace")->info( sprintf("itrigger") );
+  $self->log( $self->logsubsys . ".IOTrace" )->info( sprintf("itrigger") );
   return if ( !defined( $self->gpib ) );
 
 SWITCH: {
@@ -651,7 +652,7 @@ sub ilocal {
 
   return if ( !defined($self) );
 
-  $self->log($self->logsubsys . ".IOTrace")->info( sprintf("ilocal") );
+  $self->log( $self->logsubsys . ".IOTrace" )->info( sprintf("ilocal") );
   return if ( !defined( $self->gpib ) );
 
 SWITCH: {
@@ -682,7 +683,7 @@ sub iremote {
 
   return if ( !defined($self) );
 
-  $self->log($self->logsubsys . ".IOTrace")->info( sprintf("iremote") );
+  $self->log( $self->logsubsys . ".IOTrace" )->info( sprintf("iremote") );
   return if ( !defined( $self->gpib ) );
 
 SWITCH: {
@@ -713,7 +714,7 @@ sub iunlock {
 
   return if ( !defined($self) );
 
-  $self->log($self->logsubsys . ".IOTrace")->info( sprintf("iunlock") );
+  $self->log( $self->logsubsys . ".IOTrace" )->info( sprintf("iunlock") );
   return if ( !defined( $self->gpib ) );
 
 SWITCH: {
@@ -744,7 +745,7 @@ sub iclose {
 
   return if ( !defined($self) );
 
-  $self->log($self->logsubsys . ".IOTrace")->info( sprintf("iclose") );
+  $self->log( $self->logsubsys . ".IOTrace" )->info( sprintf("iclose") );
   return if ( !defined( $self->gpib ) );
 
 SWITCH: {
@@ -828,10 +829,10 @@ ONLY CALL THIS IF YOU'RE TALKING TO AN HP E2050.
 
 sub e2050Reset {
   my $self = shift;
-  my $ip = shift || $self->host;
+  my $ip   = shift || $self->host;
 
   return if ( !length($ip) );
-  my $t = Net::Telnet->new( Timeout => 20, Prompt => '/>\s*/' );
+  my $t      = Net::Telnet->new( Timeout => 20, Prompt => '/>\s*/' );
   my $result = $t->open($ip);
 
   #printf("%s\n",$result?"opened":"didn't open");

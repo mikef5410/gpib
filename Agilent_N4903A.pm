@@ -237,6 +237,7 @@ sub prbsSet {
   } else {
     UsageError->throw( { err => "Bad prbs pattern choice" } );
   }
+
   #my $res = $self->iOPC(25);
 }
 
@@ -249,6 +250,7 @@ sub prbsSetED {
   } else {
     UsageError->throw( { err => "Bad prbs pattern choice" } );
   }
+
   #my $res = $self->iOPC(25);
 }
 
