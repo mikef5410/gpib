@@ -134,7 +134,11 @@ sub BUILD {
   if ( $proto =~ /SICL/i ) {
     use_module("RPCINST");
     RPCINST->import();
-    $self->gpib( RPCINST->new( $host, $target ) );
+    my $trmchr=undef;
+    if (ref($args) && defined($args->{termChr})) {
+      $trmchr=$args->{termChr};
+    }
+    $self->gpib( RPCINST->new( $host, $target, $trmchr ) );
     $self->gpib()->iconnect();
     return;
   }
