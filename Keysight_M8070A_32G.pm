@@ -264,7 +264,7 @@ sub simpleSJ {    #(sjfreq, amplitude mUI,  onoff)
     $self->PJ1Frequency($freq);
     $self->PJ1State(1);
   }
-
+  $self->iOPC(15);
 }
 
 sub txDeemphasis {
@@ -281,6 +281,7 @@ sub txDeemphasis {
   $self->deemphasisPost3( $taps->[4] );
   $self->deemphasisPost4( $taps->[5] );
   $self->deemphasisPost5( $taps->[6] );
+  $self->iOPC(15);
 }
 
 sub outputsON {
