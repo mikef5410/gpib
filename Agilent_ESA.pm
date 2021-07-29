@@ -13,7 +13,6 @@ sub init {
 
   return 0 if ( $self->{VIRTUAL} );
 
-  $self->iconnect();
   $self->iwrite("*RST") if ( $self->{RESET} );    #Get us to default state
 
   my $err = 'x';                                  # seed for first iteration
