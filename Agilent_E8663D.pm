@@ -2,16 +2,13 @@
 package Agilent_E8663D;
 use Moose;
 use namespace::autoclean;
-
 with( 'GPIBWrap', 'Throwable' );    #Use Try::Tiny to catch my errors
 
 sub init {
   my $self = shift;
-
   return 0 if ( $self->{VIRTUAL} );
 
   $self->iwrite("*RST") if ( $self->{RESET} );    #Get us to default state
-
   my $err = 'x';                                  # seed for first iteration
                                                   # clear any accumulated errors
   while ($err) {
@@ -22,14 +19,12 @@ sub init {
   $self->iwrite("*CLS");
   #
   return 0;
-
 }
 
 #Set/Get CW frequency in Hz
 sub freq {
   my $self = shift;
   my $val  = shift;
-
   if ( !defined($val) ) {
     return ( $self->iquery(":SOURCE:FREQUENCY:CW?") );
   } else {
@@ -42,7 +37,6 @@ sub freq {
 sub ampl {
   my $self = shift;
   my $val  = shift;
-
   if ( !defined($val) ) {
     return ( $self->iquery(":POWER?") );
   } else {
@@ -54,7 +48,6 @@ sub ampl {
 sub outputState {
   my $self = shift;
   my $val  = shift;
-
   if ( !defined($val) ) {
     return ( $self->iquery(":OUTPUT:STATE?") );
   } else {
@@ -68,6 +61,5 @@ sub outputState {
     $self->iOPC();
   }
 }
-
 __PACKAGE__->meta->make_immutable;
 1;

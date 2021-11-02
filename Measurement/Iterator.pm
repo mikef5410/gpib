@@ -3,9 +3,8 @@
 package Iterator;
 use Moose;
 use namespace::autoclean;
-
 has 'filter' => ( is => 'rw', default => sub { return (@_); } );
-has 'done'   => ( is => 'rw', isa     => 'Bool', default => 0 );
+has 'done' => ( is => 'rw', isa => 'Bool', default => 0 );
 
 #return next value or undef
 sub next {
@@ -22,22 +21,18 @@ sub nitems {
   my $self = shift;
   return;
 }
-
 __PACKAGE__->meta->make_immutable;
 1;
 
 package Iterator::Array;
 use Moose;
 use namespace::autoclean;
-
 extends 'Iterator';
-
 has 'values' => ( is => 'rw', isa => 'ArrayRef' );
-has 'index'  => ( is => 'rw', isa => 'Int', default => -1 );
+has 'index' => ( is => 'rw', isa => 'Int', default => -1 );
 
 sub next {
   my $self = shift;
-
   return (undef) if ( $self->done );
   $self->index( $self->index + 1 );
   if ( $self->index >= scalar( @{ $self->values } ) ) {
@@ -45,7 +40,6 @@ sub next {
     return (undef);
   }
   return ( $self->values->[ $self->index ] );
-
 }
 
 sub reset {
@@ -58,19 +52,16 @@ sub nitems {
   my $self = shift;
   return ( scalar( @{ $self->values } ) );
 }
-
 __PACKAGE__->meta->make_immutable;
 1;
 
 package Iterator::Hash;
 use Moose;
 use namespace::autoclean;
-
 extends 'Iterator';
-
 has 'values' => ( is => 'rw', isa => 'HashRef' );
 has '_keys'  => ( is => 'rw', isa => 'Maybe[ArrayRef]', default => undef );
-has 'index'  => ( is => 'rw', isa => 'Int', default => -1 );
+has 'index'  => ( is => 'rw', isa => 'Int',             default => -1 );
 
 sub BUILD {
   my $self = shift;
@@ -82,7 +73,6 @@ sub BUILD {
 
 sub next {
   my $self = shift;
-
   return (undef) if ( $self->done );
   $self->index( $self->index + 1 );
   if ( $self->index >= scalar( @{ $self->_keys } ) ) {
@@ -103,7 +93,6 @@ sub nitems {
   my $self = shift;
   return ( scalar( @{ $self->_keys } ) );
 }
-
 __PACKAGE__->meta->make_immutable;
 1;
 
@@ -112,14 +101,12 @@ use Moose;
 use PDL;
 use PDL::Math;
 use namespace::autoclean;
-
 extends 'Iterator';
-
 has 'start'           => ( is => 'ro', isa => 'Num', );
 has 'stop'            => ( is => 'ro', isa => 'Num', );
 has 'npts'            => ( is => 'ro', isa => 'Maybe[Num]', );
 has 'increment'       => ( is => 'ro', isa => 'Maybe[Num]', );
-has 'index'           => ( is => 'ro', isa => 'Int', default => -1 );
+has 'index'           => ( is => 'ro', isa => 'Int',  default => -1 );
 has '_npts_specified' => ( is => 'ro', isa => 'Bool', default => 0 );
 
 sub BUILD {
@@ -134,7 +121,6 @@ sub BUILD {
 
 sub next {
   my $self = shift;
-
   return (undef) if ( $self->done );
   $self->{index} = ( $self->index + 1 );
   if ( $self->index > ( $self->npts - 1 ) ) {
@@ -154,7 +140,6 @@ sub nitems {
   my $self = shift;
   return ( $self->npts );
 }
-
 __PACKAGE__->meta->make_immutable;
 1;
 
@@ -163,9 +148,7 @@ use Moose;
 use PDL;
 use PDL::Math;
 use namespace::autoclean;
-
 extends 'Iterator';
-
 has 'start'   => ( is => 'ro', isa => 'Num' );
 has 'stop'    => ( is => 'ro', isa => 'Num' );
 has 'npts'    => ( is => 'ro', isa => 'Num', default => 101 );
@@ -176,7 +159,6 @@ has '_dir'    => ( is => 'ro', isa => 'Num', default => 1.0 );
 
 sub BUILD {
   my $self = shift;
-
   $self->{span}     = ( abs( $self->stop - $self->start ) );
   $self->{_logstep} = ( $self->_logb( $self->stop ) - $self->_logb( $self->start ) ) / ( $self->npts - 1 );
 }
@@ -189,7 +171,6 @@ sub _logb {
 
 sub next {
   my $self = shift;
-
   return (undef) if ( $self->done );
   my $ix = $self->index + 1;
   if ( $ix >= $self->npts ) {
@@ -210,6 +191,5 @@ sub nitems {
   my $self = shift;
   return ( $self->ntps );
 }
-
 __PACKAGE__->meta->make_immutable;
 1;

@@ -1,27 +1,20 @@
 #!/usr/bin/perl
 #
-
 use lib "/projects/gpib";
 use GPIBWrap;
 use HP_5334;
+my $cntr = HP_5334->new( connectString => "VXI11::192.168.243.57::gpib0,3" );
 
-my $cntr=HP_5334->new(connectString=>"VXI11::192.168.243.57::gpib0,3");
 #my $cntr=HP_5334->new(connectString=>"SICL::192.168.243.57::gpib0,3");
-
-my $stb=$cntr->ireadstb();
-printf("status byte: 0x%x\n",$stb);
-
+my $stb = $cntr->ireadstb();
+printf( "status byte: 0x%x\n", $stb );
 $cntr->iwrite("ID");
-my $res=$cntr->iread();
-print($res,"\n");
-my $stb=$cntr->ireadstb();
-printf("status byte: 0x%x\n",$stb);
-
-$res=$cntr->iquery("ID");
-print $res,"\n";
-
-$res=$cntr->id();
-print $res,"\n";
-
+my $res = $cntr->iread();
+print( $res, "\n" );
+my $stb = $cntr->ireadstb();
+printf( "status byte: 0x%x\n", $stb );
+$res = $cntr->iquery("ID");
+print $res, "\n";
+$res = $cntr->id();
+print $res, "\n";
 exit;
-

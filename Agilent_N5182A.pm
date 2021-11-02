@@ -4,12 +4,10 @@ use Moose;
 use namespace::autoclean;
 use Time::HiRes qw(sleep usleep gettimeofday tv_interval);
 use Carp qw(cluck longmess shortmess);
-
 with( 'GPIBWrap', 'Throwable' );    #Use Try::Tiny to catch my errors
 
 sub init {
   my $self = shift;
-
   $self->iwrite("*RST") if ( $self->{RESET} );    #Get us to default state
   my $err = 'x';                                  # seed for first iteration
                                                   # clear any accumulated errors
@@ -21,14 +19,12 @@ sub init {
   $self->iwrite("*CLS");
   #
   return 0;
-
 }
 
 #Set/Get CW frequency in Hz
 sub freq {
   my $self = shift;
   my $val  = shift;
-
   if ( !defined($val) ) {
     return ( $self->iquery(":SOURCE:FREQUENCY:CW?") );
   } else {
@@ -42,7 +38,6 @@ sub freq {
 sub ampl {
   my $self = shift;
   my $val  = shift;
-
   if ( !defined($val) ) {
     return ( $self->iquery(":POWER?") );
   } else {
@@ -55,7 +50,6 @@ sub ampl {
 sub outputState {
   my $self = shift;
   my $val  = shift;
-
   if ( !defined($val) ) {
     return ( $self->iquery(":OUTP?") );
   } else {
@@ -70,6 +64,5 @@ sub outputState {
     #$self->iOPC(3);
   }
 }
-
 __PACKAGE__->meta->make_immutable;
 1;

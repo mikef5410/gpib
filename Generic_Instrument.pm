@@ -2,16 +2,13 @@
 package Generic_Instrument;
 use Moose;
 use namespace::autoclean;
-
 with( 'GPIBWrap', 'Throwable' );    #Use Try::Tiny to catch my errors
 
 sub init {
   my $self = shift;
-
   return 0 if ( $self->{VIRTUAL} );
 
   $self->iwrite("*RST") if ( $self->{RESET} );    #Get us to default state
-
   my $err = 'x';                                  # seed for first iteration
                                                   # clear any accumulated errors
   while ($err) {
@@ -22,8 +19,6 @@ sub init {
   $self->iwrite("*CLS");
   #
   return 0;
-
 }
-
 __PACKAGE__->meta->make_immutable;
 1;

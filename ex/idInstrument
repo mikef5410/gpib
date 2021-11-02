@@ -1,15 +1,11 @@
 #!/usr/bin/perl
 #
-
 use lib "..";
 use lib $ENV{PERL_GPIB} || "/projects/gpib";
-
 use Log::Log4perl qw(:easy);
 use Generic_Instrument;
-
 Log::Log4perl->easy_init($ERROR);
 my $cs = shift;
-
 if ( !length($cs) ) {
   print <<'EoF';
 Usage: idInstrument <connection string>
@@ -22,15 +18,12 @@ or
 EoF
   exit(1);
 }
-
 my $i = Generic_Instrument->new( connectString => $cs );
 if ( !defined( $i->gpib ) ) { die("Connection error."); }
-
 my $id = $i->iquery("*idn?");
 print("$id\n");
 my $opt = $i->iquery("*opt?");
 print("$opt\n");
 $i->ilocal();
 $i->iclose();
-
 exit;

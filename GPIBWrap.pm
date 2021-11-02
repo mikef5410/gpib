@@ -1,6 +1,5 @@
 # -*- mode: perl -*-
 # perltidy -i=2 -ce -l=100
-
 package GPIBWrap;
 
 #use Moose;
@@ -10,16 +9,11 @@ use Time::HiRes qw(sleep usleep gettimeofday tv_interval);
 use Time::Out qw(timeout);
 use Carp qw(cluck longmess shortmess);
 use Module::Runtime qw(use_module use_package_optimistically);
-
 use Exception::Class ( 'IOError', 'TransportError', 'TimeoutError' );
-
 use Net::Telnet;    #For e2050Reset only
-
 ## no critic (BitwiseOperators)
-
 with 'Throwable';   #Use Try::Tiny to catch my errors
 with 'MooseX::Log::Log4perl';
-
 has 'gpib'           => ( is => 'rw', default => undef );
 has 'bytes_read'     => ( is => 'ro', default => 0 );
 has 'reason'         => ( is => 'ro', default => 0 );
@@ -112,7 +106,6 @@ B<reason> - Reason the read terminated
 sub BUILD {
   my $self = shift;
   my $args = shift;
-
   if ( !length( $self->connectString ) ) { return; }
 
   #Connection string can be VXI11::host::instr0
@@ -123,26 +116,23 @@ sub BUILD {
     $target = "inst0";
   }
   $self->host($host);
-
   if ( $proto =~ /VXI11/i ) {
     use_module("VXI11::Client");
     VXI11::Client->import();
     $self->gpib( VXI11::Client::vxi_open( address => $host, device => $target ) );
     return;
   }
-
   if ( $proto =~ /SICL/i ) {
     use_module("RPCINST");
     RPCINST->import();
-    my $trmchr=undef;
-    if (ref($args) && defined($args->{termChr})) {
-      $trmchr=$args->{termChr};
+    my $trmchr = undef;
+    if ( ref($args) && defined( $args->{termChr} ) ) {
+      $trmchr = $args->{termChr};
     }
     $self->gpib( RPCINST->new( $host, $target, $trmchr ) );
     $self->gpib()->iconnect();
     return;
   }
-
   return;
 }
 
@@ -161,12 +151,9 @@ Get an exclusive lock on the instrument. If $wait is true, wait for the lock.
 sub ilock {
   my $self = shift;
   my $wait = shift;
-
   return if ( !defined($self) );
-
   $self->log( $self->logsubsys . ".IOTrace" )->info( sprintf( "ilock %s", $wait ) );
   return if ( !defined( $self->gpib ) );
-
 SWITCH: {
     if ( $self->gpib()->isa("VXI11::Client") ) {
       if ($wait) {
@@ -197,12 +184,9 @@ Send a string ($arg) to the instrument.
 sub iwrite {
   my $self = shift;
   my $arg  = shift;
-
   return if ( !defined($self) );
-
   $self->log( $self->logsubsys . ".IOTrace" )->info( sprintf( "iwrite %s", $arg ) );
   return if ( !defined( $self->gpib ) );
-
   chomp($arg);
   chomp($arg);
   $arg .= "\n";
@@ -231,26 +215,21 @@ Read a response from the instrument.
 
 sub iread {
   my $self = shift;
-
   return if ( !defined($self) );
   if ( !defined( $self->gpib ) ) {
-
     $self->log( $self->logsubsys . ".IOTrace" )->info( sprintf("iread") );
     return ("");
   }
-
 SWITCH: {
     if ( $self->gpib()->isa("VXI11::Client") ) {
       ( $self->{bytes_read}, my $in, $self->{reason} ) =
         $self->gpib()->vxi_read(@_);
-
       $self->log( $self->logsubsys . ".IOTrace" )->info( sprintf( "iread -> %s", $in ) );
       return ($in);
       last(SWITCH);
     }
     if ( $self->gpib()->isa("RPCINST") ) {
       my $in = $self->gpib()->iread(@_);
-
       $self->log( $self->logsubsys . ".IOTrace" )->info( sprintf( "iread -> %s", $in ) );
       return ($in);
       last(SWITCH);
@@ -272,12 +251,9 @@ Just an iwrite($arg) followed by an iread().
 sub iquery {
   my $self = shift;
   my $arg  = shift;
-
   return if ( !defined($self) );
-
   $self->log( $self->logsubsys . ".IOTrace" )->info( sprintf( "iquery %s", $arg ) );
   return if ( !defined( $self->gpib ) );
-
   $self->iwrite($arg);
   return ( $self->iread() );
 }
@@ -304,9 +280,7 @@ sub iOPC {
   my $self    = shift;
   my $timeout = shift || $self->defaultTimeout;    #seconds (fractional ok)
   my $ret;
-
   return if ( !defined($self) );
-
   $self->log( $self->logsubsys . ".IOTrace" )->info( sprintf( "iOPC %g", $timeout ) );
   return if ( !defined( $self->gpib ) );
   $self->iwrite("*ESE 255");                       #Propagate OPC up to STB
@@ -319,12 +293,12 @@ sub iOPC {
   if ($timeout) {
     while ( tv_interval($tstart) <= $timeout ) {
       my $stb = $self->ireadstb();
-      if ( $stb & ( 1 << 5 ) ) {                   #Event status bit set?
-        my $esr = $self->iquery("*ESR?") || 0;     #Read ESR
-        if ( $esr & 0x1 ) {                        #OPC set?
+      if ( $stb & ( 1 << 5 ) ) {    #Event status bit set?
+        my $esr = $self->iquery("*ESR?") || 0;    #Read ESR
+        if ( $esr & 0x1 ) {                       #OPC set?
           return (1);
         }
-        usleep(500000);                            # 500ms sleep
+        usleep(500000);                           # 500ms sleep
       }
       my $sleepTime = $timeout - tv_interval($tstart);
       if ( $sleepTime <= 0 ) {
@@ -336,7 +310,6 @@ sub iOPC {
 
     #If we get here, we timed out.
     $self->log( $self->logsubsys . ".IOTrace" )->error( shortmess("IOPC Timeout") );
-
     my @errs = $self->getErrors();
     $self->log( $self->logsubsys . ".IOTrace" )->warning( join( "\n", @errs ) );
 
@@ -374,12 +347,9 @@ Shorthand for $instrument->iquery("*IDN?");
 
 sub id {
   my $self = shift;
-
   return if ( !defined($self) );
-
   $self->log( $self->logsubsys . ".IOTrace" )->info( sprintf("id") );
   return if ( !defined( $self->gpib ) );
-
   return ( $self->iquery("*IDN?") );
 }
 
@@ -395,12 +365,9 @@ Makes a "thread" to watch for interrupts from the instrument, for, say, SRQ's
 
 sub icreate_intr_chan {
   my $self = shift;
-
   return if ( !defined($self) );
-
   $self->log( $self->logsubsys . ".IOTrace" )->info( sprintf("icreate_intr_chan") );
   return if ( !defined( $self->gpib ) );
-
 SWITCH: {
     if ( $self->gpib()->isa("VXI11::Client") ) {
       $self->gpib()->vxi_create_intr_chan();
@@ -426,26 +393,21 @@ Out of band reads of the instrument's status byte.
 
 sub ireadstb {
   my $self = shift;
-
   return if ( !defined($self) );
   if ( !defined( $self->gpib ) ) {
-
     $self->log( $self->logsubsys . ".IOTrace" )->info( sprintf("ireadstb") );
     return (0);
   }
   my $rval = 0;
-
 SWITCH: {
     if ( $self->gpib()->isa("VXI11::Client") ) {
       $rval = ( $self->gpib()->vxi_readstatusbyte() )[1];
-
       $self->log( $self->logsubsys . ".IOTrace" )->info( sprintf( "ireadstb -> 0x%x", $rval ) );
       return ($rval);
       last(SWITCH);
     }
     if ( $self->gpib()->isa("RPCINST") ) {
       $rval = $self->gpib()->istatus();
-
       $self->log( $self->logsubsys . ".IOTrace" )->info( sprintf( "ireadstb -> 0x%x", $rval ) );
       return ($rval);
       last(SWITCH);
@@ -467,12 +429,9 @@ Enable SRQ, and call $handle when it happens.
 sub ienablesrq {
   my $self   = shift;
   my $handle = shift;
-
   return if ( !defined($self) );
-
   $self->log( $self->logsubsys . ".IOTrace" )->info( sprintf( "ienablesrq %s", $handle ) );
   return if ( !defined( $self->gpib ) );
-
 SWITCH: {
     if ( $self->gpib()->isa("VXI11::Client") ) {
       $self->gpib()->vxi_enable_srq($handle);
@@ -498,12 +457,9 @@ Wait for interrupt.
 
 sub iwai {
   my $self = shift;
-
   return if ( !defined($self) );
-
   $self->log( $self->logsubsys . ".IOTrace" )->info( sprintf("iwai") );
   return if ( !defined( $self->gpib ) );
-
 SWITCH: {
     if ( $self->gpib()->isa("VXI11::Client") ) {
       $self->gpib()->vxi_wait_for_interrupt();
@@ -529,12 +485,9 @@ Kill the "thread" that watches for lan interrupts.
 
 sub idestroy_intr_chan {
   my $self = shift;
-
   return if ( !defined($self) );
-
   $self->log( $self->logsubsys . ".IOTrace" )->info( sprintf("idestroy_intr_chan") );
   return if ( !defined( $self->gpib ) );
-
 SWITCH: {
     if ( $self->gpib()->isa("VXI11::Client") ) {
       $self->gpib()->vxi_destroy_intr_chan();
@@ -560,12 +513,9 @@ Abort the current operation.
 
 sub iabort {
   my $self = shift;
-
   return if ( !defined($self) );
-
   $self->log( $self->logsubsys . ".IOTrace" )->info( sprintf("iabort") );
   return if ( !defined( $self->gpib ) );
-
 SWITCH: {
     if ( $self->gpib()->isa("VXI11::Client") ) {
       $self->gpib()->vxi_abort();
@@ -591,12 +541,9 @@ Effect a Selected Device Clear
 
 sub iclear {
   my $self = shift;
-
   return if ( !defined($self) );
-
   $self->log( $self->logsubsys . ".IOTrace" )->info( sprintf("iclear") );
   return if ( !defined( $self->gpib ) );
-
 SWITCH: {
     if ( $self->gpib()->isa("VXI11::Client") ) {
       $self->gpib()->vxi_clear();
@@ -622,12 +569,9 @@ Send a bus trigger.
 
 sub itrigger {
   my $self = shift;
-
   return if ( !defined($self) );
-
   $self->log( $self->logsubsys . ".IOTrace" )->info( sprintf("itrigger") );
   return if ( !defined( $self->gpib ) );
-
 SWITCH: {
     if ( $self->gpib()->isa("VXI11::Client") ) {
       $self->gpib()->vxi_trigger();
@@ -653,12 +597,9 @@ Cause the instrument to go to local control.
 
 sub ilocal {
   my $self = shift;
-
   return if ( !defined($self) );
-
   $self->log( $self->logsubsys . ".IOTrace" )->info( sprintf("ilocal") );
   return if ( !defined( $self->gpib ) );
-
 SWITCH: {
     if ( $self->gpib()->isa("VXI11::Client") ) {
       $self->gpib()->vxi_local();
@@ -684,12 +625,9 @@ Put the instrument in remote control (local lockout).
 
 sub iremote {
   my $self = shift;
-
   return if ( !defined($self) );
-
   $self->log( $self->logsubsys . ".IOTrace" )->info( sprintf("iremote") );
   return if ( !defined( $self->gpib ) );
-
 SWITCH: {
     if ( $self->gpib()->isa("VXI11::Client") ) {
       $self->gpib()->vxi_remote();
@@ -715,12 +653,9 @@ Give up your lock on the device.
 
 sub iunlock {
   my $self = shift;
-
   return if ( !defined($self) );
-
   $self->log( $self->logsubsys . ".IOTrace" )->info( sprintf("iunlock") );
   return if ( !defined( $self->gpib ) );
-
 SWITCH: {
     if ( $self->gpib()->isa("VXI11::Client") ) {
       $self->gpib()->vxi_unlock();
@@ -746,12 +681,9 @@ Close this connection.
 
 sub iclose {
   my $self = shift;
-
   return if ( !defined($self) );
-
   $self->log( $self->logsubsys . ".IOTrace" )->info( sprintf("iclose") );
   return if ( !defined( $self->gpib ) );
-
 SWITCH: {
     if ( $self->gpib()->isa("VXI11::Client") ) {
       $self->gpib()->vxi_close();
@@ -779,7 +711,6 @@ SCPI, you can override this method.
 sub isQuery {
   my $self = shift;
   my $str  = shift;
-
   chomp($str);
   chomp($str);
   if ( $str =~ /\?;?\s*$/ ) {
@@ -805,8 +736,7 @@ method.
 =cut
 
 sub getErrors {
-  my $self = shift;
-
+  my $self    = shift;
   my @errlist = ();
   my $res     = "";
   while (1) {
@@ -834,7 +764,6 @@ ONLY CALL THIS IF YOU'RE TALKING TO AN HP E2050.
 sub e2050Reset {
   my $self = shift;
   my $ip   = shift || $self->host;
-
   return if ( !length($ip) );
   my $t      = Net::Telnet->new( Timeout => 20, Prompt => '/>\s*/' );
   my $result = $t->open($ip);
@@ -844,5 +773,4 @@ sub e2050Reset {
   $result = $t->print('y');
   return;
 }
-
 1;

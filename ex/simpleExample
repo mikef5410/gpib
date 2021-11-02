@@ -6,7 +6,6 @@ use strict;
 #Where to find our library and auxiliary code.
 use lib "..";
 use lib $ENV{PERL_GPIB} || "/projects/gpib";
-
 use VXI11::Client;
 use GPIBWrap;
 use Log::Log4perl qw(:easy);    #Log4perl can be used to trace GPIB I/O

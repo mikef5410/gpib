@@ -2,16 +2,13 @@
 package Agilent_N4960A;
 use Moose;
 use namespace::autoclean;
-
 with( 'GPIBWrap', 'Throwable' );    #Use Try::Tiny to catch my errors
 
 sub init {
   my $self = shift;
-
   return 0 if ( $self->{VIRTUAL} );
 
   $self->iwrite("*RST") if ( $self->{RESET} );    #Get us to default state
-
   my $err = 'x';                                  # seed for first iteration
                                                   # clear any accumulated errors
   while ($err) {
@@ -22,14 +19,12 @@ sub init {
   $self->iwrite("*CLS");
   #
   return 0;
-
 }
 
 #Set/Get CW frequency in Hz
 sub freq {
   my $self = shift;
   my $val  = shift;
-
   if ( !defined($val) ) {
     return ( $self->iquery(":SOURCE:FREQUENCY:CW?") );
   } else {
@@ -42,7 +37,6 @@ sub freq {
 sub amplSubrate {
   my $self = shift;
   my $val  = shift;
-
   if ( !defined($val) ) {
     return ( $self->iquery(":OUTSubrate:Amplitude?") );
   } else {
@@ -54,7 +48,6 @@ sub amplSubrate {
 sub outputSubrateState {
   my $self = shift;
   my $val  = shift;
-
   if ( !defined($val) ) {
     return ( $self->iquery(":OUTSubrate:OUTPUT?") );
   } else {
@@ -71,7 +64,6 @@ sub outputSubrateState {
 sub dividerSubrate {
   my $self = shift;
   my $val  = shift;
-
   if ( !defined($val) ) {
     return ( $self->iquery(":OUTSubrate:Divider?") );
   } else {
@@ -79,6 +71,5 @@ sub dividerSubrate {
     $self->iOPC();
   }
 }
-
 __PACKAGE__->meta->make_immutable;
 1;
