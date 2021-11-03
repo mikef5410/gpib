@@ -601,4 +601,62 @@ sub BERtime {
   my $nerrs = $results[4] + $results[5];
   return ( $nerrs / $nbits );
 }
+
+sub simpleJTol {
+  my $self      = shift;
+  my $fstart    = shift;
+  my $fstop     = shift;
+  my $points    = shift;
+  my $targetBER = shift;
+  my $nowait    = shift || 0;
+  my $count     = 100;
+  $targetBER = 1.0 / $targetBER if ( $targetBER < 1 );
+  $self->ensureJTOL();
+  my $meas = $self->JTOLMeasurement;
+
+  #  $self->iwrite( sprintf( ":PLUGin:JTOLerance '%s'", $meas ) );
+  $self->iwrite( sprintf( ":PLUGin:JTOLerance:INSTruments:GENerator '%s','M2.DataOut'", $meas ) );
+  $self->iwrite( sprintf( ":PLUGin:JTOLerance:INSTruments:ANALyzer '%s','M2.DataIn'",   $meas ) );
+  $self->iwrite( sprintf( ":PLUGin:JTOLerance:BSETup:TBERatio '%s',%g",            $meas, $targetBER ) );
+  $self->iwrite( sprintf( ":PLUGin:JTOLerance:BSETup:CLEVel '%s',95%",             $meas ) );
+  $self->iwrite( sprintf( ":PLUGin:JTOLerance:BSETup:FRTime '%s',15s",             $meas ) );
+  $self->iwrite( sprintf( ":PLUGin:JTOLerance:BSETup:ARTime '%s',10s",             $meas ) );
+  $self->iwrite( sprintf( ":PLUGin:JTOLerance:MSETup:FREQuency:STARt '%s',%g",     $meas, $fstart ) );
+  $self->iwrite( sprintf( ":PLUGin:JTOLerance:MSETup:FREQuency:STOp '%s',%g",      $meas, $fstop ) );
+  $self->iwrite( sprintf( ":PLUGin:JTOLerance:MSETup:NPOints '%s',%g",             $meas, $points ) );
+  $self->iwrite( sprintf( ":PLUGin:JTOLerance:MSETup:MODE '%s',CHAR",              $meas ) );
+  $self->iwrite( sprintf( ":PLUGin:JTOLerance:MSETup:ALGorithm '%s',DLOGarithmic", $meas ) );
+  $self->iwrite( sprintf( ":PLUGin:JTOLerance:MSETup:LOG:SSIZe '%s',10%",          $meas ) );
+  $self->iwrite( sprintf( ":PLUGin:JTOLerance:RESet '%s'",                         $meas ) );
+  $self->jitterGlobal(1);
+
+  while ( $self->syncLoss() && $count ) {
+    sleep(0.1);
+    $count--;
+  }
+  return (-1) if ( $self->syncLoss() );
+  $self->iwrite( sprintf( ":PLUGin:JTOLerance:STARt '%s'", $meas ) );
+  return if ($nowait);
+  do {
+    sleep(1);
+  } while ( $self->iquery( sprintf( ":PLUGin:JTOLerance:RUN:STATus? '%s", $meas ) ) != 1 );
+  return;
+}
+
+sub getJTOLprogress {
+  my $self = shift;
+  my $meas = $self->JTOLMeasurement;
+  my $prog = $self->iquery( sprintf( ":PLUGin:JTOLerace:RUN:PROGress? '%s'", $meas ) );
+  return ($prog);
+}
+
+sub getJTOLresults {
+  my $self = shift;
+  my $meas = $self->JTOLMeasurement;
+  my $res  = $self->iquery( sprintf( ":PLUGin:JTOLerance:FETCh:DATA? '%s'", $meas ) );
+  $self->iwrite( sprintf( ":PLUGin:JTOLerance:RESet '%s'", $meas ) );
+  $res =~ s/[()]//g;
+  my @results = split( ",", $res );
+  return ( \@results );
+}
 1;
