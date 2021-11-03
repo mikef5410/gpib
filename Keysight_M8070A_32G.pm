@@ -11,6 +11,10 @@ use Exception::Class ('UsageError');
 use constant 'OK'  => 0;
 use constant 'ERR' => 1;
 with( 'GPIBWrap', 'Throwable' );    #Use Try::Tiny to catch my errors
+has 'ERatioMeasurement' => ( is => 'rw', default => undef );
+has 'ERatioAutoClean'   => ( is => 'rw', isa     => 'Bool', default => 1 );
+has 'JTOLMeasurement'   => ( is => 'rw', default => undef );
+has 'JTOLAutoClean'     => ( is => 'rw', isa     => 'Bool', default => 1 );
 my %instrMethods = (
   jitterGlobal       => { scpi => ":SOURCE:JITTer:GLOBAL:STATE 'M1.System'",                    argtype => "BOOLEAN" },
   PJState            => { scpi => ":SOURCE:JITTer:LFRequency:PERiodic:STATE 'M2.DataOut'",      argtype => "BOOLEAN" },
@@ -117,6 +121,54 @@ sub init {
   $self->iwrite("*CLS");
   #
   return 0;
+}
+
+sub DEMOLISH {
+  my $self = shift;
+  $self->pluginERATioClean();
+  $self->pluginJTOLClean();
+}
+
+sub ensureERatio {
+  my $self = shift;
+  return if ( defined( $self->ERatioMeasurement ) );
+  my $measName = sprintf( "ERatio_%llu", time );
+  $self->iwrite( sprintf( "PLUGin:ERATio:NEW '%s'", $measName ) );
+  $self->ERatioMeasurement($measName);
+  return;
+}
+
+sub ensureJTOL {
+  my $self = shift;
+  return if ( defined( $self->JTOLMeasurement ) );
+  my $measName = sprintf( "JTOL_%llu", time );
+  $self->iwrite( sprintf( "PLUGin:JTOLerance:NEW '%s'", $measName ) );
+  $self->JTOLMeasurement($measName);
+  return;
+}
+
+sub pluginERATioClean {
+  my $self         = shift;
+  my $measurements = $self->iquery(":PLUGin:ERATio:CATalog?");
+  if ( length($measurements) ) {
+    foreach my $m ( split( ",", $measurements ) ) {
+      $self->iwrite( sprintf( ":PLUGin:ERATio:DELete '%s'", $m ) );
+    }
+  }
+  $self->ERatioMeasurement(undef);
+  $self->iOPC(20);
+}
+
+sub pluginJTOLClean {
+  my $self         = shift;
+  my $measurements = $self->iquery(":PLUGin:JTOLerance:CATalog?");
+  if ( length($measurements) ) {
+    foreach my $m ( split( ",", $measurements ) ) {
+      $self->iwrite( sprintf( ":PLUGin:JTOLerance:DELete '%s'", $m ) );
+    }
+  }
+  $self->JTOLMeasurement(undef);
+  $self->iOPC(20);
 }
 
 sub onoffStateGeneric {
@@ -439,6 +491,11 @@ sub syncLoss {
   return ( $ret != 0 );
 }
 
+sub isSynchronized {
+  my $self = shift;
+  return ( !$self->syncLoss() );
+}
+
 sub alignmentLoss {
   my $self = shift;
   my $ret  = $self->iquery(":STATus:INSTrument:SALoss? 'M2.DataIn'");
@@ -508,5 +565,40 @@ sub argCheck {
       );
   }
   return (OK);
+}
+
+sub BERtime {
+  my $self   = shift;
+  my $period = shift;    #seconds
+  my $count  = 100;
+  my $res;
+  $period = int($period);
+  $period = ( $period < 1 ) ? 1 : $period;
+  $self->ensureERatio();
+  my $meas = $self->ERatioMeasurement;
+  $self->iwrite( sprintf( ":PLUGin:ERATio:ACQuisition:ALOCation '%s','M2.DataIn'", $meas ) );
+  $self->iwrite( sprintf( ":PLUGin:ERATio:ACQuisition:AEND '%s',FDUR",             $meas ) );
+  $self->iwrite( sprintf( ":PLUGin:ERATio:ACQuisition:DURation '%s',FTIM",         $meas ) );
+  $self->iwrite( sprintf( ":PLUGin:ERATio:ACQuisition:TIME '%s', %g",              $meas, $period ) );
+  $self->iwrite( sprintf( ":PLUGin:ERATio:RESet '%s'",                             $meas ) );
+
+  while ( $self->syncLoss() && $count ) {
+    sleep(0.1);
+    $count--;
+  }
+  return (-1) if ( $self->syncLoss() );
+  $self->iwrite( sprintf( ":PLUGin:ERATio:STARt '%s'", $meas ) );
+  do {
+    sleep(1);
+  } while ( $self->iquery( sprintf( ":PLUGin:ERATio:RUN:STATus? '%s", $meas ) ) != 1 );
+  $res = $self->iquery( sprintf( ":PLUGin:ERATio:FETCh:DATA? '%s'", $meas ) );
+  $self->iwrite( sprintf( ":PLUGin:ERATio:RESet '%s'", $meas ) );
+  $res =~ s/[()]//g;
+  my @results = split( ",", $res );
+
+  #Array should have Location,Timestamp,ComparedOnes,ComparedZeroes,ErroredOnes,ErroredZeroes
+  my $nbits = $results[2] + $results[3];
+  my $nerrs = $results[4] + $results[5];
+  return ( $nerrs / $nbits );
 }
 1;
