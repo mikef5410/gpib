@@ -11,10 +11,12 @@ use Exception::Class ('UsageError');
 use constant 'OK'  => 0;
 use constant 'ERR' => 1;
 with( 'GPIBWrap', 'Throwable' );    #Use Try::Tiny to catch my errors
+
 has 'ERatioMeasurement' => ( is => 'rw', default => undef );
 has 'ERatioAutoClean'   => ( is => 'rw', isa     => 'Bool', default => 1 );
 has 'JTOLMeasurement'   => ( is => 'rw', default => undef );
 has 'JTOLAutoClean'     => ( is => 'rw', isa     => 'Bool', default => 1 );
+
 my %instrMethods = (
   jitterGlobal       => { scpi => ":SOURCE:JITTer:GLOBAL:STATE 'M1.System'",                    argtype => "BOOLEAN" },
   PJState            => { scpi => ":SOURCE:JITTer:LFRequency:PERiodic:STATE 'M2.DataOut'",      argtype => "BOOLEAN" },
@@ -362,18 +364,6 @@ sub clockRate {
   my $clock = shift;
   return ( $self->PGbitRate($clock) );
 }
-my $prbsXML =
-'<sequenceDefinition xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.agilent.com/schemas/M8000/DataSequence">
-  <description />
-  <sequence>
-    <loop>
-      <block length="%d">
-        <prbs polynomial="%s" />
-      </block>
-    </loop>
-  </sequence>
-</sequenceDefinition>
-';
 
 sub PGPRBSpattern {
   my $self        = shift;
@@ -389,20 +379,17 @@ sub PGPRBSpattern {
   } elsif ( $prbsPattern eq "PRBS23" ) {
     $pattern = "2^23-1";
   }
-  my $patt = $self->stringBlockEncode( sprintf( $prbsXML, $blockLen, $pattern ) );
 
-  #$self->iclear();
-  #my @errs=$self->getErrors();
-  $self->iwrite(":DATA:SEQ:DELALL;");
+  $self->iwrite( sprintf( ":DATA:SEQuence:SET 'M2.DataOut',PRBS,'%s'", $pattern ) );
   $self->iOPC(35);
-  $self->iwrite(":DATA:SEQ:DEL 'Generator'");
-  $self->iOPC(35);
-  $self->iwrite(":DATA:SEQ:NEW 'Generator'");
-  $self->iOPC(35);
-  $self->iwrite( ":DATA:SEQ:VAL 'Generator'," . $patt );
-  $self->iOPC(35);
-  $self->iwrite(":DATA:SEQ:BIND 'Generator','M2.DataOut'");
-  $self->iwrite(":DATA:SEQ:REST 'Generator'");
+}
+
+sub PGClockPattern {
+  my $self     = shift;
+  my $div      = shift || 2;
+  my $blockLen = shift || 256;
+
+  $self->iwrite( sprintf( ":DATA:SEQuence:SET 'M2.DataOut',CLOCK,'%d'", $div ) );
   $self->iOPC(35);
 }
 
@@ -420,15 +407,9 @@ sub EDPRBSpattern {
   } elsif ( $prbsPattern eq "PRBS23" ) {
     $pattern = "2^23-1";
   }
-  my $patt = $self->stringBlockEncode( sprintf( $prbsXML, $blockLen, $pattern ) );
-  $self->iwrite(":DATA:SEQ:DEL 'Analyzer'");
-  $self->iwrite(":DATA:SEQ:NEW 'Analyzer'");
-  $self->iOPC(25);
-  $self->iwrite(":DATA:SEQ:VAL 'Analyzer',$patt");
-  $self->iOPC(25);
-  $self->iwrite(":DATA:SEQ:BIND 'Analyzer','M2.DataIn'");
-  $self->iwrite(":DATA:SEQ:REST 'Analyzer'");
-  $self->iOPC(25);
+
+  $self->iwrite( sprintf( ":DATA:SEQuence:SET 'M2.DataIn',PRBS,'%s'", $pattern ) );
+  $self->iOPC(35);
 }
 
 sub prbsSet {
@@ -436,13 +417,6 @@ sub prbsSet {
   my $pattern = shift;    #PRBS7 PRBS9 PRBS15 PRBS23 PRBS31
   $self->PGPRBSpattern($pattern);
   $self->EDPRBSpattern($pattern);
-}
-
-sub stringBlockEncode {
-  my $self = shift;
-  my $str  = shift;
-  my $len  = length($str);
-  return ( sprintf( "#3%d%s", $len, $str ) );
 }
 
 sub errorInsertion {
@@ -517,8 +491,10 @@ sub alignmentLoss {
 
 sub autoAlign {
   my $self = shift;
-  my $ret  = $self->iwrite(":INPut:ALIGnment:EYE:AUTO 'M2.DataIn'");
-  $self->iOPC(40);
+  my $ret;
+  $ret = $self->iwrite(":INPut:ALIGnment:EYE:AUTO 'M2.DataIn'");
+  $self->iOPC(60);
+
   if ( $self->alignmentLoss ) {
     return (0);
   }
@@ -680,4 +656,5 @@ sub getJTOLresults {
   #@results=Location,( Frequency, Amplitude, NBits, NErrs, BER, PASS/FAIL ) repeated for each freq.
   return ( \@results );
 }
+
 1;

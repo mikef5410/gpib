@@ -773,4 +773,24 @@ sub e2050Reset {
   $result = $t->print('y');
   return;
 }
+
+=over 4
+
+=item B<< $instrument->stringBlockEncode($string) >>
+
+Returns a string suitable for downloading to an instrument with the length
+encoded at the front of the string. Encodes the length into 3 digits, so only
+works up to 1000 characters.
+
+=back
+
+=cut
+
+sub stringBlockEncode {
+  my $self = shift;
+  my $str  = shift;
+  my $len  = length($str);
+  return ( sprintf( "#3%d%s", $len, $str ) );
+}
+
 1;
