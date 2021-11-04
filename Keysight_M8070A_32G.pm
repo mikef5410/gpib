@@ -356,6 +356,12 @@ sub PGbitRate {
   $self->clockFreq( $clock / 2 );
   $self->iOPC(20);
 }
+
+sub clockRate {
+  my $self  = shift;
+  my $clock = shift;
+  return ( $self->PGbitRate($clock) );
+}
 my $prbsXML =
 '<sequenceDefinition xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.agilent.com/schemas/M8000/DataSequence">
   <description />
@@ -423,6 +429,13 @@ sub EDPRBSpattern {
   $self->iwrite(":DATA:SEQ:BIND 'Analyzer','M2.DataIn'");
   $self->iwrite(":DATA:SEQ:REST 'Analyzer'");
   $self->iOPC(25);
+}
+
+sub prbsSet {
+  my $self    = shift;
+  my $pattern = shift;    #PRBS7 PRBS9 PRBS15 PRBS23 PRBS31
+  $self->PGPRBSpattern($pattern);
+  $self->EDPRBSpattern($pattern);
 }
 
 sub stringBlockEncode {
@@ -510,6 +523,12 @@ sub autoAlign {
     return (0);
   }
   return (1);
+}
+
+sub amplitude {
+  my $self = shift;
+  my $vpp  = shift;
+  $self->outputAmpl($vpp);
 }
 
 sub amplitude_cm {
@@ -657,6 +676,8 @@ sub getJTOLresults {
   $self->iwrite( sprintf( ":PLUGin:JTOLerance:RESet '%s'", $meas ) );
   $res =~ s/[()]//g;
   my @results = split( ",", $res );
+
+  #@results=Location,( Frequency, Amplitude, NBits, NErrs, BER, PASS/FAIL ) repeated for each freq.
   return ( \@results );
 }
 1;
