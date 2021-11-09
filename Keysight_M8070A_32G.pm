@@ -154,8 +154,9 @@ sub pluginERATioClean {
   my $measurements = $self->iquery(":PLUGin:ERATio:CATalog?");
 
   if ( length($measurements) ) {
-    foreach my $m ( split( ",", $measurements ) ) {
-      $self->iwrite( sprintf( ":PLUGin:ERATio:DELete %s", $m ) ) if length($m);
+     foreach my $m ( split( ",", $measurements ) ) {
+        $m=~s/"//g;
+        $self->iwrite( sprintf( ":PLUGin:ERATio:DELete '%s'", $m ) ) if length($m);
     }
   }
   $self->ERatioMeasurement(undef);
@@ -167,7 +168,8 @@ sub pluginJTOLClean {
   my $measurements = $self->iquery(":PLUGin:JTOLerance:CATalog?");
   if ( length($measurements) ) {
     foreach my $m ( split( ",", $measurements ) ) {
-      $self->iwrite( sprintf( ":PLUGin:JTOLerance:DELete '%s'", $m ) );
+       $m=~s/"//g;
+       $self->iwrite( sprintf( ":PLUGin:JTOLerance:DELete '%s'", $m ) ) if length($m);
     }
   }
   $self->JTOLMeasurement(undef);

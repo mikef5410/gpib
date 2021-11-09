@@ -11,6 +11,7 @@ use Carp qw(cluck longmess shortmess);
 use Module::Runtime qw(use_module use_package_optimistically);
 use Exception::Class ( 'IOError', 'TransportError', 'TimeoutError' );
 use Net::Telnet;    #For e2050Reset only
+use Log::Log4perl;
 ## no critic (BitwiseOperators)
 with 'Throwable';   #Use Try::Tiny to catch my errors
 with 'MooseX::Log::Log4perl';
@@ -108,6 +109,7 @@ sub BUILD {
   my $args = shift;
   if ( !length( $self->connectString ) ) { return; }
 
+  Log::Log4perl->init_once();
   #Connection string can be VXI11::host::instr0
   #or VXI11::host::hpib,12 or SICL::host::hpib,12
   my $cs = $self->connectString;
@@ -152,7 +154,7 @@ sub ilock {
   my $self = shift;
   my $wait = shift;
   return if ( !defined($self) );
-  $self->log( $self->logsubsys . ".IOTrace" )->info( sprintf( "ilock %s", $wait ) );
+  $self->log( $self->logsubsys . ".IOTrace" )->info( sprintf( "ilock %s", $wait ) ) if (Log::Log4perl->initialized());
   return if ( !defined( $self->gpib ) );
 SWITCH: {
     if ( $self->gpib()->isa("VXI11::Client") ) {
@@ -185,7 +187,7 @@ sub iwrite {
   my $self = shift;
   my $arg  = shift;
   return if ( !defined($self) );
-  $self->log( $self->logsubsys . ".IOTrace" )->info( sprintf( "iwrite %s", $arg ) );
+  $self->log( $self->logsubsys . ".IOTrace" )->info( sprintf( "iwrite %s", $arg ) ) if (Log::Log4perl->initialized());
   return if ( !defined( $self->gpib ) );
   chomp($arg);
   chomp($arg);
@@ -217,20 +219,20 @@ sub iread {
   my $self = shift;
   return if ( !defined($self) );
   if ( !defined( $self->gpib ) ) {
-    $self->log( $self->logsubsys . ".IOTrace" )->info( sprintf("iread") );
+    $self->log( $self->logsubsys . ".IOTrace" )->info( sprintf("iread") ) if (Log::Log4perl->initialized());
     return ("");
   }
 SWITCH: {
     if ( $self->gpib()->isa("VXI11::Client") ) {
       ( $self->{bytes_read}, my $in, $self->{reason} ) =
         $self->gpib()->vxi_read(@_);
-      $self->log( $self->logsubsys . ".IOTrace" )->info( sprintf( "iread -> %s", $in ) );
+      $self->log( $self->logsubsys . ".IOTrace" )->info( sprintf( "iread -> %s", $in ) ) if (Log::Log4perl->initialized());
       return ($in);
       last(SWITCH);
     }
     if ( $self->gpib()->isa("RPCINST") ) {
       my $in = $self->gpib()->iread(@_);
-      $self->log( $self->logsubsys . ".IOTrace" )->info( sprintf( "iread -> %s", $in ) );
+      $self->log( $self->logsubsys . ".IOTrace" )->info( sprintf( "iread -> %s", $in ) ) if (Log::Log4perl->initialized());
       return ($in);
       last(SWITCH);
     }
@@ -252,7 +254,7 @@ sub iquery {
   my $self = shift;
   my $arg  = shift;
   return if ( !defined($self) );
-  $self->log( $self->logsubsys . ".IOTrace" )->info( sprintf( "iquery %s", $arg ) );
+  $self->log( $self->logsubsys . ".IOTrace" )->info( sprintf( "iquery %s", $arg ) ) if (Log::Log4perl->initialized());
   return if ( !defined( $self->gpib ) );
   $self->iwrite($arg);
   return ( $self->iread() );
@@ -281,7 +283,7 @@ sub iOPC {
   my $timeout = shift || $self->defaultTimeout;    #seconds (fractional ok)
   my $ret;
   return if ( !defined($self) );
-  $self->log( $self->logsubsys . ".IOTrace" )->info( sprintf( "iOPC %g", $timeout ) );
+  $self->log( $self->logsubsys . ".IOTrace" )->info( sprintf( "iOPC %g", $timeout ) ) if (Log::Log4perl->initialized());
   return if ( !defined( $self->gpib ) );
   $self->iwrite("*ESE 255");                       #Propagate OPC up to STB
   $self->iwrite("*CLS");
@@ -309,9 +311,9 @@ sub iOPC {
     }    #While timeout
 
     #If we get here, we timed out.
-    $self->log( $self->logsubsys . ".IOTrace" )->error( shortmess("IOPC Timeout") );
+    $self->log( $self->logsubsys . ".IOTrace" )->error( shortmess("IOPC Timeout") ) if (Log::Log4perl->initialized());
     my @errs = $self->getErrors();
-    $self->log( $self->logsubsys . ".IOTrace" )->warning( join( "\n", @errs ) );
+    $self->log( $self->logsubsys . ".IOTrace" )->warning( join( "\n", @errs ) ) if (Log::Log4perl->initialized());
 
     #TimeoutError->throw( { err => 'iOPC timeout' });
     return (-1);
@@ -348,7 +350,7 @@ Shorthand for $instrument->iquery("*IDN?");
 sub id {
   my $self = shift;
   return if ( !defined($self) );
-  $self->log( $self->logsubsys . ".IOTrace" )->info( sprintf("id") );
+  $self->log( $self->logsubsys . ".IOTrace" )->info( sprintf("id") ) if (Log::Log4perl->initialized());
   return if ( !defined( $self->gpib ) );
   return ( $self->iquery("*IDN?") );
 }
@@ -366,7 +368,7 @@ Makes a "thread" to watch for interrupts from the instrument, for, say, SRQ's
 sub icreate_intr_chan {
   my $self = shift;
   return if ( !defined($self) );
-  $self->log( $self->logsubsys . ".IOTrace" )->info( sprintf("icreate_intr_chan") );
+  $self->log( $self->logsubsys . ".IOTrace" )->info( sprintf("icreate_intr_chan") ) if (Log::Log4perl->initialized());
   return if ( !defined( $self->gpib ) );
 SWITCH: {
     if ( $self->gpib()->isa("VXI11::Client") ) {
@@ -395,20 +397,20 @@ sub ireadstb {
   my $self = shift;
   return if ( !defined($self) );
   if ( !defined( $self->gpib ) ) {
-    $self->log( $self->logsubsys . ".IOTrace" )->info( sprintf("ireadstb") );
+    $self->log( $self->logsubsys . ".IOTrace" )->info( sprintf("ireadstb") ) if (Log::Log4perl->initialized());
     return (0);
   }
   my $rval = 0;
 SWITCH: {
     if ( $self->gpib()->isa("VXI11::Client") ) {
       $rval = ( $self->gpib()->vxi_readstatusbyte() )[1];
-      $self->log( $self->logsubsys . ".IOTrace" )->info( sprintf( "ireadstb -> 0x%x", $rval ) );
+      $self->log( $self->logsubsys . ".IOTrace" )->info( sprintf( "ireadstb -> 0x%x", $rval ) ) if (Log::Log4perl->initialized());
       return ($rval);
       last(SWITCH);
     }
     if ( $self->gpib()->isa("RPCINST") ) {
       $rval = $self->gpib()->istatus();
-      $self->log( $self->logsubsys . ".IOTrace" )->info( sprintf( "ireadstb -> 0x%x", $rval ) );
+      $self->log( $self->logsubsys . ".IOTrace" )->info( sprintf( "ireadstb -> 0x%x", $rval ) ) if (Log::Log4perl->initialized());
       return ($rval);
       last(SWITCH);
     }
@@ -430,7 +432,7 @@ sub ienablesrq {
   my $self   = shift;
   my $handle = shift;
   return if ( !defined($self) );
-  $self->log( $self->logsubsys . ".IOTrace" )->info( sprintf( "ienablesrq %s", $handle ) );
+  $self->log( $self->logsubsys . ".IOTrace" )->info( sprintf( "ienablesrq %s", $handle ) ) if (Log::Log4perl->initialized());
   return if ( !defined( $self->gpib ) );
 SWITCH: {
     if ( $self->gpib()->isa("VXI11::Client") ) {
@@ -458,7 +460,7 @@ Wait for interrupt.
 sub iwai {
   my $self = shift;
   return if ( !defined($self) );
-  $self->log( $self->logsubsys . ".IOTrace" )->info( sprintf("iwai") );
+  $self->log( $self->logsubsys . ".IOTrace" )->info( sprintf("iwai") ) if (Log::Log4perl->initialized());
   return if ( !defined( $self->gpib ) );
 SWITCH: {
     if ( $self->gpib()->isa("VXI11::Client") ) {
@@ -486,7 +488,7 @@ Kill the "thread" that watches for lan interrupts.
 sub idestroy_intr_chan {
   my $self = shift;
   return if ( !defined($self) );
-  $self->log( $self->logsubsys . ".IOTrace" )->info( sprintf("idestroy_intr_chan") );
+  $self->log( $self->logsubsys . ".IOTrace" )->info( sprintf("idestroy_intr_chan") ) if (Log::Log4perl->initialized());
   return if ( !defined( $self->gpib ) );
 SWITCH: {
     if ( $self->gpib()->isa("VXI11::Client") ) {
@@ -514,7 +516,7 @@ Abort the current operation.
 sub iabort {
   my $self = shift;
   return if ( !defined($self) );
-  $self->log( $self->logsubsys . ".IOTrace" )->info( sprintf("iabort") );
+  $self->log( $self->logsubsys . ".IOTrace" )->info( sprintf("iabort") ) if (Log::Log4perl->initialized());
   return if ( !defined( $self->gpib ) );
 SWITCH: {
     if ( $self->gpib()->isa("VXI11::Client") ) {
@@ -542,7 +544,7 @@ Effect a Selected Device Clear
 sub iclear {
   my $self = shift;
   return if ( !defined($self) );
-  $self->log( $self->logsubsys . ".IOTrace" )->info( sprintf("iclear") );
+  $self->log( $self->logsubsys . ".IOTrace" )->info( sprintf("iclear") ) if (Log::Log4perl->initialized());
   return if ( !defined( $self->gpib ) );
 SWITCH: {
     if ( $self->gpib()->isa("VXI11::Client") ) {
@@ -570,7 +572,7 @@ Send a bus trigger.
 sub itrigger {
   my $self = shift;
   return if ( !defined($self) );
-  $self->log( $self->logsubsys . ".IOTrace" )->info( sprintf("itrigger") );
+  $self->log( $self->logsubsys . ".IOTrace" )->info( sprintf("itrigger") ) if (Log::Log4perl->initialized());
   return if ( !defined( $self->gpib ) );
 SWITCH: {
     if ( $self->gpib()->isa("VXI11::Client") ) {
@@ -598,7 +600,7 @@ Cause the instrument to go to local control.
 sub ilocal {
   my $self = shift;
   return if ( !defined($self) );
-  $self->log( $self->logsubsys . ".IOTrace" )->info( sprintf("ilocal") );
+  $self->log( $self->logsubsys . ".IOTrace" )->info( sprintf("ilocal") ) if (Log::Log4perl->initialized());
   return if ( !defined( $self->gpib ) );
 SWITCH: {
     if ( $self->gpib()->isa("VXI11::Client") ) {
@@ -626,7 +628,7 @@ Put the instrument in remote control (local lockout).
 sub iremote {
   my $self = shift;
   return if ( !defined($self) );
-  $self->log( $self->logsubsys . ".IOTrace" )->info( sprintf("iremote") );
+  $self->log( $self->logsubsys . ".IOTrace" )->info( sprintf("iremote") ) if (Log::Log4perl->initialized());
   return if ( !defined( $self->gpib ) );
 SWITCH: {
     if ( $self->gpib()->isa("VXI11::Client") ) {
@@ -654,7 +656,7 @@ Give up your lock on the device.
 sub iunlock {
   my $self = shift;
   return if ( !defined($self) );
-  $self->log( $self->logsubsys . ".IOTrace" )->info( sprintf("iunlock") );
+  $self->log( $self->logsubsys . ".IOTrace" )->info( sprintf("iunlock") ) if (Log::Log4perl->initialized());
   return if ( !defined( $self->gpib ) );
 SWITCH: {
     if ( $self->gpib()->isa("VXI11::Client") ) {
@@ -682,7 +684,7 @@ Close this connection.
 sub iclose {
   my $self = shift;
   return if ( !defined($self) );
-  $self->log( $self->logsubsys . ".IOTrace" )->info( sprintf("iclose") );
+  $self->log( $self->logsubsys . ".IOTrace" )->info( sprintf("iclose") ) if (Log::Log4perl->initialized());
   return if ( !defined( $self->gpib ) );
 SWITCH: {
     if ( $self->gpib()->isa("VXI11::Client") ) {
