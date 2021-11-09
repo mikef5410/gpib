@@ -134,7 +134,7 @@ sub DEMOLISH {
 sub ensureERatio {
   my $self = shift;
   return if ( defined( $self->ERatioMeasurement ) );
-  my $measName = sprintf( "ERatio_%llu", time );
+  my $measName = "ERMeas";
   $self->iwrite( sprintf( "PLUGin:ERATio:NEW '%s'", $measName ) );
   $self->ERatioMeasurement($measName);
   return;
@@ -143,7 +143,7 @@ sub ensureERatio {
 sub ensureJTOL {
   my $self = shift;
   return if ( defined( $self->JTOLMeasurement ) );
-  my $measName = sprintf( "JTOL_%llu", time );
+  my $measName = "JTOLMeas";
   $self->iwrite( sprintf( "PLUGin:JTOLerance:NEW '%s'", $measName ) );
   $self->JTOLMeasurement($measName);
   return;
@@ -152,9 +152,10 @@ sub ensureJTOL {
 sub pluginERATioClean {
   my $self         = shift;
   my $measurements = $self->iquery(":PLUGin:ERATio:CATalog?");
+
   if ( length($measurements) ) {
     foreach my $m ( split( ",", $measurements ) ) {
-      $self->iwrite( sprintf( ":PLUGin:ERATio:DELete '%s'", $m ) );
+      $self->iwrite( sprintf( ":PLUGin:ERATio:DELete %s", $m ) ) if length($m);
     }
   }
   $self->ERatioMeasurement(undef);
@@ -567,15 +568,18 @@ sub BERtime {
   my $period = shift;    #seconds
   my $count  = 100;
   my $res;
+
   $period = int($period);
   $period = ( $period < 1 ) ? 1 : $period;
   $self->ensureERatio();
   my $meas = $self->ERatioMeasurement;
+  $self->iwrite( sprintf( ":PLUGin:ERATio:RESet '%s'",                             $meas ) );
   $self->iwrite( sprintf( ":PLUGin:ERATio:ACQuisition:ALOCation '%s','M2.DataIn'", $meas ) );
   $self->iwrite( sprintf( ":PLUGin:ERATio:ACQuisition:AEND '%s',FDUR",             $meas ) );
   $self->iwrite( sprintf( ":PLUGin:ERATio:ACQuisition:DURation '%s',FTIM",         $meas ) );
-  $self->iwrite( sprintf( ":PLUGin:ERATio:ACQuisition:TIME '%s', %g",              $meas, $period ) );
-  $self->iwrite( sprintf( ":PLUGin:ERATio:RESet '%s'",                             $meas ) );
+  $self->iwrite( sprintf( ":PLUGin:ERATio:ACQuisition:TIME '%s', %d",              $meas, $period ) );
+  $self->iwrite( sprintf( ":PLUGin:ERATio:ACQuisition:INTerval '%s', %d",              $meas, $period ) );
+  $self->iwrite( sprintf( ":PLUGin:ERATio:ACQuisition:HISTory '%s', 1",              $meas,) );
 
   while ( $self->syncLoss() && $count ) {
     sleep(0.1);
@@ -583,12 +587,19 @@ sub BERtime {
   }
   return (-1) if ( $self->syncLoss() );
   $self->iwrite( sprintf( ":PLUGin:ERATio:STARt '%s'", $meas ) );
-  do {
-    sleep(1);
-  } while ( $self->iquery( sprintf( ":PLUGin:ERATio:RUN:STATus? '%s", $meas ) ) != 1 );
+  sleep($period);
+  my $done=$self->iquery("*OPC?");
+  if (! $done) {
+    sleep(0.10 * $period);
+    $done=$self->iquery("*OPC?");
+  }
+  if (! $done ) {
+    print("BER measurement didn't complete\n");
+    return(-1);
+  }
   $res = $self->iquery( sprintf( ":PLUGin:ERATio:FETCh:DATA? '%s'", $meas ) );
-  $self->iwrite( sprintf( ":PLUGin:ERATio:RESet '%s'", $meas ) );
   $res =~ s/[()]//g;
+  #print "$res\n";
   my @results = split( ",", $res );
 
   #Array should have Location,Timestamp,ComparedOnes,ComparedZeroes,ErroredOnes,ErroredZeroes
