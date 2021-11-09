@@ -16,41 +16,47 @@ has 'ERatioMeasurement' => ( is => 'rw', default => undef );
 has 'ERatioAutoClean'   => ( is => 'rw', isa     => 'Bool', default => 1 );
 has 'JTOLMeasurement'   => ( is => 'rw', default => undef );
 has 'JTOLAutoClean'     => ( is => 'rw', isa     => 'Bool', default => 1 );
+has 'LocationIn'        => ( is => 'rw', isa     => 'Str',  default => "M2.DataIn" );
+has 'LocationOut'       => ( is => 'rw', isa     => 'Str',  default => "M2.DataOut" );
+has 'ClockMult'         => ( is => 'rw', isa     => 'Int',  default => 2 );
 
 my %instrMethods = (
-  jitterGlobal       => { scpi => ":SOURCE:JITTer:GLOBAL:STATE 'M1.System'",                    argtype => "BOOLEAN" },
-  PJState            => { scpi => ":SOURCE:JITTer:LFRequency:PERiodic:STATE 'M2.DataOut'",      argtype => "BOOLEAN" },
-  PJAmplitude        => { scpi => ":SOURce:JITTer:LFRequency:PERiodic:AMPLitude 'M2.DataOut'",  argtype => "NUMBER" },
-  PJFrequency        => { scpi => ":SOURce:JITTer:LFRequency:PERiodic:FREQuency 'M2.DataOut'",  argtype => "NUMBER" },
-  PJ1State           => { scpi => ":SOURce:JITTer:HFRequency:PERiodic1:STATe 'M2.DataOut'",     argtype => "BOOLEAN" },
-  PJ1Amplitude       => { scpi => ":SOURce:JITTer:HFRequency:PERiodic1:AMPLitude 'M2.DataOut'", argtype => "NUMBER" },
-  PJ1Frequency       => { scpi => ":SOURce:JITTer:HFRequency:PERiodic1:FREQuency 'M2.DataOut'", argtype => "NUMBER" },
-  PJ2State           => { scpi => ":SOURce:JITTer:HFRequency:PERiodic2:STATe 'M2.DataOut'",     argtype => "BOOLEAN" },
-  PJ2Amplitude       => { scpi => ":SOURce:JITTer:HFRequency:PERiodic2:AMPLitude 'M2.DataOut'", argtype => "NUMBER" },
-  PJ2Frequency       => { scpi => ":SOURce:JITTer:HFRequency:PERiodic2:FREQuency 'M2.DataOut'", argtype => "NUMBER" },
-  outputAmpl         => { scpi => ":SOURCE:VOLT:AMPL 'M2.DataOut'",                             argtype => "NUMBER" },
-  outputOffset       => { scpi => ":SOURCE:VOLT:OFFSET 'M2.DataOut'",                           argtype => "NUMBER" },
-  outputCoupling     => { scpi => ":OUTPUT:COUPLING 'M2.DataOut'", argtype => "ENUM", argcheck => [ 'AC',   'DC' ] },
-  outputPolarity     => { scpi => ":OUTPUT:POLARITY 'M2.DataOut'", argtype => "ENUM", argcheck => [ 'NORM', 'INV' ] },
+  jitterGlobal   => { scpi => ":SOURCE:JITTer:GLOBAL:STATE 'M1.System'",                       argtype => "BOOLEAN" },
+  PJState        => { scpi => ":SOURCE:JITTer:LFRequency:PERiodic:STATE '!!LocationOut'",      argtype => "BOOLEAN" },
+  PJAmplitude    => { scpi => ":SOURce:JITTer:LFRequency:PERiodic:AMPLitude '!!LocationOut'",  argtype => "NUMBER" },
+  PJFrequency    => { scpi => ":SOURce:JITTer:LFRequency:PERiodic:FREQuency '!!LocationOut'",  argtype => "NUMBER" },
+  PJ1State       => { scpi => ":SOURce:JITTer:HFRequency:PERiodic1:STATe '!!LocationOut'",     argtype => "BOOLEAN" },
+  PJ1Amplitude   => { scpi => ":SOURce:JITTer:HFRequency:PERiodic1:AMPLitude '!!LocationOut'", argtype => "NUMBER" },
+  PJ1Frequency   => { scpi => ":SOURce:JITTer:HFRequency:PERiodic1:FREQuency '!!LocationOut'", argtype => "NUMBER" },
+  PJ2State       => { scpi => ":SOURce:JITTer:HFRequency:PERiodic2:STATe '!!LocationOut'",     argtype => "BOOLEAN" },
+  PJ2Amplitude   => { scpi => ":SOURce:JITTer:HFRequency:PERiodic2:AMPLitude '!!LocationOut'", argtype => "NUMBER" },
+  PJ2Frequency   => { scpi => ":SOURce:JITTer:HFRequency:PERiodic2:FREQuency '!!LocationOut'", argtype => "NUMBER" },
+  outputAmpl     => { scpi => ":SOURCE:VOLT:AMPL '!!LocationOut'",                             argtype => "NUMBER" },
+  outputOffset   => { scpi => ":SOURCE:VOLT:OFFSET '!!LocationOut'",                           argtype => "NUMBER" },
+  outputCoupling => { scpi => ":OUTPUT:COUPLING '!!LocationOut'", argtype => "ENUM", argcheck => [ 'AC',   'DC' ] },
+  outputPolarity => { scpi => ":OUTPUT:POLARITY '!!LocationOut'", argtype => "ENUM", argcheck => [ 'NORM', 'INV' ] },
   clockFreq          => { scpi => ":SOURCE:FREQ 'M1.ClkGen'",         argtype => "NUMBER" },
   globalOutputsState => { scpi => ":OUTPUT:GLOBAL:STATE 'M1.System'", argtype => "BOOLEAN" },
-  outputState        => { scpi => ":OUTPUT:STATE 'M2.DataOut'",       argtype => "BOOLEAN" },
-  deemphasisUnit  => { scpi => ":OUTPUT:DEEMphasis:UNIT 'M2.DataOut'", argtype => "ENUM", argcheck => [ 'DB', 'PCT' ] },
-  deemphasisPre2  => { scpi => ":OUTPUT:DEEMphasis:PRECursor2 'M2.DataOut'",  argtype => "NUMBER" },
-  deemphasisPre1  => { scpi => ":OUTPUT:DEEMphasis:PRECursor1 'M2.DataOut'",  argtype => "NUMBER" },
-  deemphasisPost1 => { scpi => ":OUTPUT:DEEMphasis:POSTCursor1 'M2.DataOut'", argtype => "NUMBER" },
-  deemphasisPost2 => { scpi => ":OUTPUT:DEEMphasis:POSTCursor2 'M2.DataOut'", argtype => "NUMBER" },
-  deemphasisPost3 => { scpi => ":OUTPUT:DEEMphasis:POSTCursor3 'M2.DataOut'", argtype => "NUMBER" },
-  deemphasisPost4 => { scpi => ":OUTPUT:DEEMphasis:POSTCursor4 'M2.DataOut'", argtype => "NUMBER" },
-  deemphasisPost5 => { scpi => ":OUTPUT:DEEMphasis:POSTCursor5 'M2.DataOut'", argtype => "NUMBER" },
+  outputState        => { scpi => ":OUTPUT:STATE '!!LocationOut'",    argtype => "BOOLEAN" },
+  deemphasisUnit     =>
+    { scpi => ":OUTPUT:DEEMphasis:UNIT '!!LocationOut'", argtype => "ENUM", argcheck => [ 'DB', 'PCT' ] },
+  deemphasisPre2       => { scpi => ":OUTPUT:DEEMphasis:PRECursor2 '!!LocationOut'",  argtype => "NUMBER" },
+  deemphasisPre1       => { scpi => ":OUTPUT:DEEMphasis:PRECursor1 '!!LocationOut'",  argtype => "NUMBER" },
+  deemphasisPost1      => { scpi => ":OUTPUT:DEEMphasis:POSTCursor1 '!!LocationOut'", argtype => "NUMBER" },
+  deemphasisPost2      => { scpi => ":OUTPUT:DEEMphasis:POSTCursor2 '!!LocationOut'", argtype => "NUMBER" },
+  deemphasisPost3      => { scpi => ":OUTPUT:DEEMphasis:POSTCursor3 '!!LocationOut'", argtype => "NUMBER" },
+  deemphasisPost4      => { scpi => ":OUTPUT:DEEMphasis:POSTCursor4 '!!LocationOut'", argtype => "NUMBER" },
+  deemphasisPost5      => { scpi => ":OUTPUT:DEEMphasis:POSTCursor5 '!!LocationOut'", argtype => "NUMBER" },
   outputTransitionTime => {
-    scpi     => ":SOURCE:PULSe:TRANsition:FIXed 'M2.DataOut'",
+    scpi     => ":SOURCE:PULSe:TRANsition:FIXed '!!LocationOut'",
     argtype  => "ENUM",
     argcheck => [ 'SMOOTH', 'MODERATE', 'STEEP', ]
   },
-  analyzerClockSource => { scpi => ":Clock:Source 'M2.DataIn'", argtype => "ENUM", argcheck => [ 'SYSclk', 'CLKin' ] },
-  alignmentThreshold  => { scpi => ":INPut:ALIGnment:EYE:THReshold 'M2.DataIn'", argtype => "NUMBER" },
+  analyzerClockSource =>
+    { scpi => ":Clock:Source '!!LocationIn'", argtype => "ENUM", argcheck => [ 'SYSclk', 'CLKin' ] },
+  alignmentThreshold => { scpi => ":INPut:ALIGnment:EYE:THReshold '!!LocationIn'", argtype => "NUMBER" },
 );
+
 my $onoffStateGeneric = sub {
   my $self       = shift;
   my $mname      = shift;
@@ -65,6 +71,7 @@ my $onoffStateGeneric = sub {
   $on = ( $on != 0 ) ? 1 : 0;
   $self->iwrite( "$subsys," . $on );
 };
+
 my $scalarSettingGeneric = sub {
   my $self  = shift;
   my $mname = shift;
@@ -109,6 +116,19 @@ sub populateAccessors {
   $meta->make_immutable;
 }
 
+#Rewrite SCPI commands to direct to correct Module/channel
+around 'iwrite' => sub {
+  my $orig = shift;
+  my $self = shift;
+  my $arg  = shift;
+
+  my $lin  = $self->LocationIn;
+  my $lout = $self->LocationOut;
+  $arg =~ s/!!LocationOut/$lout/g;
+  $arg =~ s/!!LocationIn/$lin/g;
+  return ( $orig->( $self, $arg ) );
+};
+
 sub init {
   my $self = shift;
   $self->populateAccessors();
@@ -129,6 +149,17 @@ sub DEMOLISH {
   my $self = shift;
   $self->pluginERATioClean();
   $self->pluginJTOLClean();
+}
+
+sub MuxActive {
+  my $self = shift;
+  my $in   = shift;
+
+  if ($in) {
+    $self->ClockMult(2);
+  } else {
+    $self->ClockMult(1);
+  }
 }
 
 sub ensureERatio {
@@ -154,9 +185,9 @@ sub pluginERATioClean {
   my $measurements = $self->iquery(":PLUGin:ERATio:CATalog?");
 
   if ( length($measurements) ) {
-     foreach my $m ( split( ",", $measurements ) ) {
-        $m=~s/"//g;
-        $self->iwrite( sprintf( ":PLUGin:ERATio:DELete '%s'", $m ) ) if length($m);
+    foreach my $m ( split( ",", $measurements ) ) {
+      $m =~ s/"//g;
+      $self->iwrite( sprintf( ":PLUGin:ERATio:DELete '%s'", $m ) ) if length($m);
     }
   }
   $self->ERatioMeasurement(undef);
@@ -168,8 +199,8 @@ sub pluginJTOLClean {
   my $measurements = $self->iquery(":PLUGin:JTOLerance:CATalog?");
   if ( length($measurements) ) {
     foreach my $m ( split( ",", $measurements ) ) {
-       $m=~s/"//g;
-       $self->iwrite( sprintf( ":PLUGin:JTOLerance:DELete '%s'", $m ) ) if length($m);
+      $m =~ s/"//g;
+      $self->iwrite( sprintf( ":PLUGin:JTOLerance:DELete '%s'", $m ) ) if length($m);
     }
   }
   $self->JTOLMeasurement(undef);
@@ -277,8 +308,8 @@ sub simpleSJ {    #(sjfreq, amplitude mUI,  onoff)
   } else {
     UsageError->throw( { err => "Bad SJ combination of freq and amplitude" } );
   }
-  $self->iwrite(":SOURCE:JITTer:HFRequency:UNIT 'M2.DataOut',UINTerval");
-  $self->iwrite(":SOURCE:JITTer:LFRequency:UNIT 'M2.DataOut',UINTerval");
+  $self->iwrite(":SOURCE:JITTer:HFRequency:UNIT '!!LocationOut',UINTerval");
+  $self->iwrite(":SOURCE:JITTer:LFRequency:UNIT '!!LocationOut',UINTerval");
   if ($lf) {
     $self->PJ1State(0);
     $self->PJAmplitude( $amplitude / 1000.0 );
@@ -355,10 +386,10 @@ sub PGbitRate {
 
   #32G mode, PG runs at 1/2 bitrate
   if ( !defined($clock) ) {
-    $clock = 2 * $self->clockFreq();
+    $clock = $self->ClockMult * $self->clockFreq();
     return ($clock);
   }
-  $self->clockFreq( $clock / 2 );
+  $self->clockFreq( $clock / $self->ClockMult );
   $self->iOPC(20);
 }
 
@@ -383,7 +414,7 @@ sub PGPRBSpattern {
     $pattern = "2^23-1";
   }
 
-  $self->iwrite( sprintf( ":DATA:SEQuence:SET 'M2.DataOut',PRBS,'%s'", $pattern ) );
+  $self->iwrite( sprintf( ":DATA:SEQuence:SET '!!LocationOut',PRBS,'%s'", $pattern ) );
   $self->iOPC(35);
 }
 
@@ -392,7 +423,7 @@ sub PGClockPattern {
   my $div      = shift || 2;
   my $blockLen = shift || 256;
 
-  $self->iwrite( sprintf( ":DATA:SEQuence:SET 'M2.DataOut',CLOCK,'%d'", $div ) );
+  $self->iwrite( sprintf( ":DATA:SEQuence:SET '!!LocationOut',CLOCK,'%d'", $div ) );
   $self->iOPC(35);
 }
 
@@ -411,7 +442,7 @@ sub EDPRBSpattern {
     $pattern = "2^23-1";
   }
 
-  $self->iwrite( sprintf( ":DATA:SEQuence:SET 'M2.DataIn',PRBS,'%s'", $pattern ) );
+  $self->iwrite( sprintf( ":DATA:SEQuence:SET '!!LocationIn',PRBS,'%s'", $pattern ) );
   $self->iOPC(35);
 }
 
@@ -426,10 +457,10 @@ sub errorInsertion {
   my $self    = shift;
   my $errRate = shift;
   if ( $errRate == 0 ) {
-    $self->iwrite(":OUTPut:EINSertion:STATe 'M2.DataOut',0");
+    $self->iwrite(":OUTPut:EINSertion:STATe '!!LocationOut',0");
     return;
   } else {
-    $self->iwrite(":OUTPut:EINSertion:MODE 'M2.DataOut',ERATio");
+    $self->iwrite(":OUTPut:EINSertion:MODE '!!LocationOut',ERATio");
     my $mag = log($errRate) / log(10);
     $mag = floor( abs($mag) + 0.5 ) * ( $mag <=> 0 );
     my $rate = "RM12";
@@ -456,8 +487,8 @@ sub errorInsertion {
     } elsif ( $mag == -11 ) {
       $rate = "RM11";
     }
-    $self->iwrite(":OUTPut:EINSertion:RATio 'M2.DataOut',$rate");
-    $self->iwrite(":OUTPut:EINSertion:STATe 'M2.DataOut',1");
+    $self->iwrite(":OUTPut:EINSertion:RATio '!!LocationOut',$rate");
+    $self->iwrite(":OUTPut:EINSertion:STATe '!!LocationOut',1");
     $self->iOPC(5);
     return;
   }
@@ -465,19 +496,19 @@ sub errorInsertion {
 
 sub clockLoss {
   my $self = shift;
-  my $ret  = $self->iquery(":STATus:INSTrument:CLOSs? 'M2.DataIn'");
+  my $ret  = $self->iquery(":STATus:INSTrument:CLOSs? '!!LocationIn'");
   return ( $ret != 0 );
 }
 
 sub dataLoss {
   my $self = shift;
-  my $ret  = $self->iquery(":STATus:INSTrument:DLOSs? 'M2.DataIn'");
+  my $ret  = $self->iquery(":STATus:INSTrument:DLOSs? '!!LocationIn'");
   return ( $ret != 0 );
 }
 
 sub syncLoss {
   my $self = shift;
-  my $ret  = $self->iquery(":STATus:INSTrument:SLOSs? 'M2.DataIn'");
+  my $ret  = $self->iquery(":STATus:INSTrument:SLOSs? '!!LocationIn'");
   return ( $ret != 0 );
 }
 
@@ -488,14 +519,14 @@ sub isSynchronized {
 
 sub alignmentLoss {
   my $self = shift;
-  my $ret  = $self->iquery(":STATus:INSTrument:SALoss? 'M2.DataIn'");
+  my $ret  = $self->iquery(":STATus:INSTrument:SALoss? '!!LocationIn'");
   return ( $ret != 0 );
 }
 
 sub autoAlign {
   my $self = shift;
   my $ret;
-  $ret = $self->iwrite(":INPut:ALIGnment:EYE:AUTO 'M2.DataIn'");
+  $ret = $self->iwrite(":INPut:ALIGnment:EYE:AUTO '!!LocationIn'");
   $self->iOPC(60);
 
   if ( $self->alignmentLoss ) {
@@ -575,13 +606,13 @@ sub BERtime {
   $period = ( $period < 1 ) ? 1 : $period;
   $self->ensureERatio();
   my $meas = $self->ERatioMeasurement;
-  $self->iwrite( sprintf( ":PLUGin:ERATio:RESet '%s'",                             $meas ) );
-  $self->iwrite( sprintf( ":PLUGin:ERATio:ACQuisition:ALOCation '%s','M2.DataIn'", $meas ) );
-  $self->iwrite( sprintf( ":PLUGin:ERATio:ACQuisition:AEND '%s',FDUR",             $meas ) );
-  $self->iwrite( sprintf( ":PLUGin:ERATio:ACQuisition:DURation '%s',FTIM",         $meas ) );
-  $self->iwrite( sprintf( ":PLUGin:ERATio:ACQuisition:TIME '%s', %d",              $meas, $period ) );
-  $self->iwrite( sprintf( ":PLUGin:ERATio:ACQuisition:INTerval '%s', %d",              $meas, $period ) );
-  $self->iwrite( sprintf( ":PLUGin:ERATio:ACQuisition:HISTory '%s', 1",              $meas,) );
+  $self->iwrite( sprintf( ":PLUGin:ERATio:RESet '%s'",                                $meas ) );
+  $self->iwrite( sprintf( ":PLUGin:ERATio:ACQuisition:ALOCation '%s','!!LocationIn'", $meas ) );
+  $self->iwrite( sprintf( ":PLUGin:ERATio:ACQuisition:AEND '%s',FDUR",                $meas ) );
+  $self->iwrite( sprintf( ":PLUGin:ERATio:ACQuisition:DURation '%s',FTIM",            $meas ) );
+  $self->iwrite( sprintf( ":PLUGin:ERATio:ACQuisition:TIME '%s', %d",                 $meas, $period ) );
+  $self->iwrite( sprintf( ":PLUGin:ERATio:ACQuisition:INTerval '%s', %d",             $meas, $period ) );
+  $self->iwrite( sprintf( ":PLUGin:ERATio:ACQuisition:HISTory '%s', 1",               $meas, ) );
 
   while ( $self->syncLoss() && $count ) {
     sleep(0.1);
@@ -590,17 +621,18 @@ sub BERtime {
   return (-1) if ( $self->syncLoss() );
   $self->iwrite( sprintf( ":PLUGin:ERATio:STARt '%s'", $meas ) );
   sleep($period);
-  my $done=$self->iquery("*OPC?");
-  if (! $done) {
-    sleep(0.10 * $period);
-    $done=$self->iquery("*OPC?");
+  my $done = $self->iquery("*OPC?");
+  if ( !$done ) {
+    sleep( 0.10 * $period );
+    $done = $self->iquery("*OPC?");
   }
-  if (! $done ) {
+  if ( !$done ) {
     print("BER measurement didn't complete\n");
-    return(-1);
+    return (-1);
   }
   $res = $self->iquery( sprintf( ":PLUGin:ERATio:FETCh:DATA? '%s'", $meas ) );
   $res =~ s/[()]//g;
+
   #print "$res\n";
   my @results = split( ",", $res );
 
@@ -623,8 +655,8 @@ sub simpleJTol {
   my $meas = $self->JTOLMeasurement;
 
   #  $self->iwrite( sprintf( ":PLUGin:JTOLerance '%s'", $meas ) );
-  $self->iwrite( sprintf( ":PLUGin:JTOLerance:INSTruments:GENerator '%s','M2.DataOut'", $meas ) );
-  $self->iwrite( sprintf( ":PLUGin:JTOLerance:INSTruments:ANALyzer '%s','M2.DataIn'",   $meas ) );
+  $self->iwrite( sprintf( ":PLUGin:JTOLerance:INSTruments:GENerator '%s','!!LocationOut'", $meas ) );
+  $self->iwrite( sprintf( ":PLUGin:JTOLerance:INSTruments:ANALyzer '%s','!!LocationIn'",   $meas ) );
   $self->iwrite( sprintf( ":PLUGin:JTOLerance:BSETup:TBERatio '%s',%g",            $meas, $targetBER ) );
   $self->iwrite( sprintf( ":PLUGin:JTOLerance:BSETup:CLEVel '%s',95%",             $meas ) );
   $self->iwrite( sprintf( ":PLUGin:JTOLerance:BSETup:FRTime '%s',15s",             $meas ) );
