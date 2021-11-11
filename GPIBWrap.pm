@@ -12,6 +12,14 @@ use Module::Runtime qw(use_module use_package_optimistically);
 use Exception::Class ( 'IOError', 'TransportError', 'TimeoutError' );
 use Net::Telnet;    #For e2050Reset only
 use Log::Log4perl;
+
+use constant 'TERM_MAXCNT'      => 1;
+use constant 'TERM_CHR'         => 2;
+use constant 'TERM_END'         => 4;
+use constant 'TERM_NON_BLOCKED' => 8;
+use constant 'OK'               => 0;
+use constant 'ERR'              => 1;
+
 ## no critic (BitwiseOperators)
 with 'Throwable';    #Use Try::Tiny to catch my errors
 with 'MooseX::Log::Log4perl';
@@ -22,6 +30,7 @@ has 'connectString'  => ( is => 'rw', default => '' );
 has 'defaultTimeout' => ( is => 'rw', default => 0 );
 has 'host'           => ( is => 'rw', default => '' );
 has 'logsubsys'      => ( is => 'rw', default => __PACKAGE__ );
+has 'instrMethods'   => ( is => 'rw', isa     => 'HashRef', default => sub { {} } );
 
 # This class wraps a variety of underlying GPIB mechanisms into a
 # common API
@@ -225,8 +234,12 @@ sub iread {
   }
 SWITCH: {
     if ( $self->gpib()->isa("VXI11::Client") ) {
-      ( $self->{bytes_read}, my $in, $self->{reason} ) =
-        $self->gpib()->vxi_read(@_);
+      my $in = "";
+      do {
+        ( $self->{bytes_read}, my $xin, $self->{reason} ) = $self->gpib()->vxi_read(@_);
+        $in .= $xin;
+      } while ( ( $self->{reason} & ( TERM_CHR | TERM_END ) ) == 0 );
+      $self->{bytes_read} = length($in);
       $self->log( $self->logsubsys . ".IOTrace" )->info( sprintf( "iread -> %s", $in ) )
         if ( Log::Log4perl->initialized() );
       return ($in);
@@ -801,6 +814,137 @@ sub stringBlockEncode {
   my $str  = shift;
   my $len  = length($str);
   return ( sprintf( "#3%d%s", $len, $str ) );
+}
+
+sub trimwhite {
+  my $in = shift;
+  $in =~ s/^\s+//;
+  $in =~ s/\s+$//;
+  $in =~ s/\s+/ /;
+  return ($in);
+}
+
+sub queryform {
+  my $in = shift;
+  $in = trimwhite($in);
+  if ( $in =~ /\s+\'/ ) {    #A subsystem qualifier?
+    $in =~ s/\s+\'/? '/;
+  } else {
+    $in = $in . '?';
+  }
+  return ($in);
+}
+
+sub enumCheck {
+  my $self  = shift;
+  my $var   = shift;
+  my $allow = shift;
+  return (OK) if ( !defined($var) );
+  my %all = map { $_ => 1 } @$allow;
+  return (ERR) if ( !exists( $all{ uc($var) } ) );
+  return (OK);
+}
+
+sub argCheck {
+  my $self  = shift;
+  my $mname = shift;
+  my $arg   = shift;
+  return (OK) if ( !defined($arg) );
+  my $descriptor = $self->instrMethods->{$mname};
+  return (OK) if ( !exists( $descriptor->{argcheck} ) );
+  if ( $descriptor->{argtype} eq 'ENUM' ) {
+    ( OK == $self->enumCheck( $arg, $descriptor->{argcheck} ) )
+      || UsageError->throw(
+      {
+        err => sprintf( "%s requires argument be one of %s", $mname, join( ",", @{ $descriptor->{argcheck} } ) )
+      }
+      );
+  }
+  return (OK);
+}
+
+my $onoffStateGeneric = sub {
+  my $self       = shift;
+  my $mname      = shift;
+  my $on         = shift;
+  my $descriptor = $self->instrMethods->{$mname};
+  my $subsys     = $descriptor->{scpi};
+  if ( !defined($on) ) {
+    $subsys =~ s/STATE/STATE?/;
+    my $state = $self->iquery($subsys);
+    return ($state);
+  }
+  $on = ( $on != 0 ) ? 1 : 0;
+  $self->iwrite( "$subsys," . $on );
+};
+
+my $scalarSettingGeneric = sub {
+  my $self  = shift;
+  my $mname = shift;
+  my $val   = shift;
+  $self->argCheck( $mname, $val );
+  my $descriptor = $self->instrMethods->{$mname};
+  my $subsys     = $descriptor->{scpi};
+  if ( !defined($val) ) {
+    my $val = $self->iquery( queryform($subsys) );
+    return ($val);
+  }
+  $self->iwrite( "$subsys," . $val );
+};
+
+my $commandGeneric = sub {
+  my $self       = shift;
+  my $mname      = shift;
+  my $descriptor = $self->instrMethods->{$mname};
+  my $subsys     = $descriptor->{scpi};
+  $self->iwrite("$subsys");
+};
+
+# Populate accessor methods for simple scpi commands.
+# $self->instrMethods is a hash ref of the form { methodName => { scpi => "scpi:command", argtype=>"sometype",
+#         argcheck=>['enumA','enumB',...]}, ... }
+#
+sub populateAccessors {
+  my $self = shift;
+  my $args = shift;
+
+  my $meta = $self->meta;
+  $self->logsubsys($self);
+  foreach my $methodName ( keys( %{ $self->instrMethods } ) ) {
+
+    #printf("populate %s in %s\n",$methodName,$self);
+    my $descriptor = $self->instrMethods->{$methodName};
+    if ( $descriptor->{argtype} eq "NONE" ) {
+      $meta->add_method(
+        $methodName => sub {
+          my $s   = shift;
+          my $arg = shift;
+          return ( $commandGeneric->( $s, $methodName ) );
+        }
+      );
+    }
+    if ( $descriptor->{argtype} eq "BOOLEAN" ) {
+      $meta->add_method(
+        $methodName => sub {
+          my $s   = shift;
+          my $arg = shift;
+          return ( $onoffStateGeneric->( $s, $methodName, $arg ) );
+        }
+      );
+    }
+    if ( $descriptor->{argtype} eq "NUMBER" || $descriptor->{argtype} eq "ENUM" ) {
+      $meta->add_method(
+        $methodName => sub {
+          my $s   = shift;
+          my $arg = shift;
+          $arg = uc($arg) if ( defined($arg) && $descriptor->{argtype} eq "ENUM" );
+          return ( $scalarSettingGeneric->( $s, $methodName, $arg ) );
+        }
+      );
+    }
+  }
+
+  #$meta->make_immutable;
 }
 
 1;

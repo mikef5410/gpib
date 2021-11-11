@@ -20,7 +20,7 @@ has 'LocationIn'        => ( is => 'rw', isa     => 'Str',  default => "M2.DataI
 has 'LocationOut'       => ( is => 'rw', isa     => 'Str',  default => "M2.DataOut" );
 has 'ClockMult'         => ( is => 'rw', isa     => 'Int',  default => 2 );
 
-my %instrMethods = (
+my $instrumentMethods = {
   jitterGlobal   => { scpi => ":SOURCE:JITTer:GLOBAL:STATE 'M1.System'",                       argtype => "BOOLEAN" },
   PJState        => { scpi => ":SOURCE:JITTer:LFRequency:PERiodic:STATE '!!LocationOut'",      argtype => "BOOLEAN" },
   PJAmplitude    => { scpi => ":SOURce:JITTer:LFRequency:PERiodic:AMPLitude '!!LocationOut'",  argtype => "NUMBER" },
@@ -53,68 +53,17 @@ my %instrMethods = (
     argcheck => [ 'SMOOTH', 'MODERATE', 'STEEP', ]
   },
   analyzerClockSource =>
-    { scpi => ":CLOCK:SOURce '!!LocationIn'", argtype => "ENUM", argcheck => [ 'SYS', 'CLK', 'CDR', 'AUXCLK','ECR' ] },
-  alignmentThreshold => { scpi => ":INPut:ALIGnment:EYE:THReshold '!!LocationIn'", argtype => "NUMBER" },
-);
-
-my $onoffStateGeneric = sub {
-  my $self       = shift;
-  my $mname      = shift;
-  my $on         = shift;
-  my $descriptor = $instrMethods{$mname};
-  my $subsys     = $descriptor->{scpi};
-  if ( !defined($on) ) {
-    $subsys =~ s/STATE/STATE?/;
-    my $state = $self->iquery($subsys);
-    return ($state);
-  }
-  $on = ( $on != 0 ) ? 1 : 0;
-  $self->iwrite( "$subsys," . $on );
+    { scpi => ":CLOCK:SOURce '!!LocationIn'", argtype => "ENUM", argcheck => [ 'SYS', 'CLK', 'CDR', 'AUXCLK', 'ECR' ] },
+  clockTrackSymbolrate => { scpi => ":CLOCK:TRACK:STATe '!!LocationIn'",             argtype => 'BOOLEAN' },
+  alignmentThreshold   => { scpi => ":INPut:ALIGnment:EYE:THReshold '!!LocationIn'", argtype => "NUMBER" },
+  cdrAuto              => { scpi => ":INPut:CDR:AUTO '!!LocationIn'",                argtype => "BOOLEAN" },
+  cdrState             => { scpi => ":INPut:CDR:STATE '!!LocationIn'",               argtype => "BOOLEAN" },
+  cdrLoopOrder => { scpi => ":INPut:CDR:LORDer '!!LocationIn'", argtype => "ENUM", argcheck => [ 'FIRST', 'SECOND' ] },
+  cdrFirstOrderBandwidth  => { scpi => ":INPut:CDR:FIRSt:LBANdwidth '!!LocationIn'",  argtype => "NUMBER" },
+  cdrSecondOrderBandwidth => { scpi => ":INPut:CDR:SECond:LBANdwidth '!!LocationIn'", argtype => "NUMBER" },
+  cdrRelock               => { scpi => ":INPut:CDR:RELOck '!!LocationIn'",            argtype => "NONE" },
+  cdrOptimize             => { scpi => ":INPut:CDR:OPTimize '!!LocationIn'",          argtype => "NONE" },
 };
-
-my $scalarSettingGeneric = sub {
-  my $self  = shift;
-  my $mname = shift;
-  my $val   = shift;
-  argCheck( $mname, $val );
-  my $descriptor = $instrMethods{$mname};
-  my $subsys     = $descriptor->{scpi};
-  if ( !defined($val) ) {
-    my $val = $self->iquery( queryform($subsys) );
-    return ($val);
-  }
-  $self->iwrite( "$subsys," . $val );
-};
-
-sub populateAccessors {
-  my $self = shift;
-  my $args = shift;
-  my $meta = __PACKAGE__->meta;
-  $self->logsubsys(__PACKAGE__);
-  foreach my $methodName ( keys(%instrMethods) ) {
-    my $descriptor = $instrMethods{$methodName};
-    if ( $descriptor->{argtype} eq "BOOLEAN" ) {
-      $meta->add_method(
-        $methodName => sub {
-          my $s   = shift;
-          my $arg = shift;
-          return ( $onoffStateGeneric->( $s, $methodName, $arg ) );
-        }
-      );
-    }
-    if ( $descriptor->{argtype} eq "NUMBER" || $descriptor->{argtype} eq "ENUM" ) {
-      $meta->add_method(
-        $methodName => sub {
-          my $s   = shift;
-          my $arg = shift;
-          $arg = uc($arg) if ( defined($arg) && $descriptor->{argtype} eq "ENUM" );
-          return ( $scalarSettingGeneric->( $s, $methodName, $arg ) );
-        }
-      );
-    }
-  }
-  $meta->make_immutable;
-}
 
 #Rewrite SCPI commands to direct to correct Module/channel
 around 'iwrite' => sub {
@@ -131,6 +80,7 @@ around 'iwrite' => sub {
 
 sub init {
   my $self = shift;
+  $self->instrMethods($instrumentMethods);
   $self->populateAccessors();
   $self->iwrite("*RST") if ( $self->{RESET} );    #Get us to default state
   my $err = 'x';                                  # seed for first iteration
@@ -551,51 +501,6 @@ sub amplitude_cm {
   $self->outputAmpl($vpp);
 }
 
-sub trimwhite {
-  my $in = shift;
-  $in =~ s/^\s+//;
-  $in =~ s/\s+$//;
-  $in =~ s/\s+/ /;
-  return ($in);
-}
-
-sub queryform {
-  my $in = shift;
-  $in = trimwhite($in);
-  if ( $in =~ /\s+\'/ ) {    #A subsystem qualifier?
-    $in =~ s/\s+\'/? '/;
-  } else {
-    $in = $in . '?';
-  }
-  return ($in);
-}
-
-sub enumCheck {
-  my $var   = shift;
-  my $allow = shift;
-  return (OK) if ( !defined($var) );
-  my %all = map { $_ => 1 } @$allow;
-  return (ERR) if ( !exists( $all{ uc($var) } ) );
-  return (OK);
-}
-
-sub argCheck {
-  my $mname = shift;
-  my $arg   = shift;
-  return (OK) if ( !defined($arg) );
-  my $descriptor = $instrMethods{$mname};
-  return (OK) if ( !exists( $descriptor->{argcheck} ) );
-  if ( $descriptor->{argtype} eq 'ENUM' ) {
-    ( OK == enumCheck( $arg, $descriptor->{argcheck} ) )
-      || UsageError->throw(
-      {
-        err => sprintf( "%s requires argument be one of %s", $mname, join( ",", @{ $descriptor->{argcheck} } ) )
-      }
-      );
-  }
-  return (OK);
-}
-
 sub BERtime {
   my $self   = shift;
   my $period = shift;    #seconds
@@ -657,17 +562,19 @@ sub simpleJTol {
   #  $self->iwrite( sprintf( ":PLUGin:JTOLerance '%s'", $meas ) );
   $self->iwrite( sprintf( ":PLUGin:JTOLerance:INSTruments:GENerator '%s','!!LocationOut'", $meas ) );
   $self->iwrite( sprintf( ":PLUGin:JTOLerance:INSTruments:ANALyzer '%s','!!LocationIn'",   $meas ) );
-  $self->iwrite( sprintf( ":PLUGin:JTOLerance:RESet '%s'",                         $meas ) );
-  $self->iwrite( sprintf( ":PLUGin:JTOLerance:BSETup:TBERatio '%s',%g",            $meas, $targetBER ) );
-  $self->iwrite( sprintf( ":PLUGin:JTOLerance:BSETup:CLEVel '%s',95%",             $meas ) );
-  $self->iwrite( sprintf( ":PLUGin:JTOLerance:BSETup:FRTime '%s',5s",             $meas ) );
-  $self->iwrite( sprintf( ":PLUGin:JTOLerance:BSETup:ARTime '%s',5s",             $meas ) );
-  $self->iwrite( sprintf( ":PLUGin:JTOLerance:MSETup:FREQuency:STARt '%s',%g",     $meas, $fstart ) );
-  $self->iwrite( sprintf( ":PLUGin:JTOLerance:MSETup:FREQuency:STOp '%s',%g",      $meas, $fstop ) );
-  $self->iwrite( sprintf( ":PLUGin:JTOLerance:MSETup:NPOints '%s',%g",             $meas, $points ) );
-  $self->iwrite( sprintf( ":PLUGin:JTOLerance:MSETup:MODE '%s',CHAR",              $meas ) );
+  $self->iwrite( sprintf( ":PLUGin:JTOLerance:RESet '%s'",                                 $meas ) );
+  $self->iwrite( sprintf( ":PLUGin:JTOLerance:BSETup:TBERatio '%s',%g",                    $meas, $targetBER ) );
+  $self->iwrite( sprintf( ":PLUGin:JTOLerance:BSETup:CLEVel '%s',95%%",                    $meas ) );
+  $self->iwrite( sprintf( ":PLUGin:JTOLerance:BSETup:FRTime '%s',1s",                      $meas ) );
+  $self->iwrite( sprintf( ":PLUGin:JTOLerance:BSETup:ARTime '%s',1s",                      $meas ) );
+  $self->iwrite( sprintf( ":PLUGin:JTOLerance:MSETup:FREQuency:STARt '%s',%g",             $meas, $fstart ) );
+  $self->iwrite( sprintf( ":PLUGin:JTOLerance:MSETup:FREQuency:STOp '%s',%g",              $meas, $fstop ) );
+  $self->iwrite( sprintf( ":PLUGin:JTOLerance:MSETup:NPOints '%s',%g",                     $meas, $points ) );
+
+  #$self->iwrite( sprintf( ":PLUGin:JTOLerance:MSETup:CLAuto '%s', 1",                      $meas ) );
+  $self->iwrite( sprintf( ":PLUGin:JTOLerance:MSETup:MODE '%s',CHAR",      $meas ) );
   $self->iwrite( sprintf( ":PLUGin:JTOLerance:MSETup:ALGorithm '%s',ULOG", $meas ) );
-  $self->iwrite( sprintf( ":PLUGin:JTOLerance:MSETup:LOG:SSIZe '%s',10",          $meas ) );
+  $self->iwrite( sprintf( ":PLUGin:JTOLerance:MSETup:LOG:SSIZe '%s',30%%", $meas ) );
   $self->jitterGlobal(1);
 
   while ( $self->syncLoss() && $count ) {
@@ -679,23 +586,30 @@ sub simpleJTol {
   return if ($nowait);
   do {
     sleep(1);
-  } while ( $self->iquery( sprintf( ":PLUGin:JTOLerance:RUN:STATus? '%s", $meas ) ) != 1 );
+  } while ( $self->iquery( sprintf( ":PLUGin:JTOLerance:RUN:STATus? '%s'", $meas ) ) != 1 );
   return;
 }
 
 sub getJTOLprogress {
   my $self = shift;
   my $meas = $self->JTOLMeasurement;
-  my $prog = $self->iwrite( sprintf( ":PLUGin:JTOLerace:RUN:PROGress? '%s'", $meas ) );
-  $prog=$self->iread();
+  my $prog = $self->iwrite( sprintf( ":PLUGin:JTOLerance:RUN:PROGress? '%s'", $meas ) );
+  $prog = $self->iread();
+  $prog += 0.0000001;
+  if ( $prog < 1.0 ) {
+    my $stat = $self->iquery( sprintf( ":PLUGin:JTOLerance:RUN:STATus? '%s'", $meas ) );
+    return (-1) if ( $stat != 1 );
+  }
   return ($prog);
 }
 
 sub getJTOLresults {
   my $self = shift;
   my $meas = $self->JTOLMeasurement;
-  my $res  = $self->iquery( sprintf( ":PLUGin:JTOLerance:FETCh:DATA? '%s'", $meas ) );
-  $self->iwrite( sprintf( ":PLUGin:JTOLerance:RESet '%s'", $meas ) );
+  my $res  = $self->iwrite( sprintf( ":PLUGin:JTOLerance:FETCh:DATA:MAXPass? '%s'", $meas ) );
+  $res = $self->iread();
+
+  #$self->iwrite( sprintf( ":PLUGin:JTOLerance:RESet '%s'", $meas ) );
   $res =~ s/[()]//g;
   my @results = split( ",", $res );
 
