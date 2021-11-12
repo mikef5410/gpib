@@ -18,6 +18,8 @@ has 'attenuation'     => ( is => 'rw' );
 has 'withBiasTee'     => ( is => 'rw' );
 has 'amplitudeSetter' => ( is => 'rw' );
 has 'vcmSetter'       => ( is => 'rw' );
+## no critic (BitwiseOperators)
+## no critic (ValuesAndExpressions::ProhibitAccessOfPrivateData)
 #
 # Measure Rx sentitivity by stepping amplitude downward
 # taking note of BER. Interpolate/Extrapolate to  1E-3, 1E-4, and 1E-12

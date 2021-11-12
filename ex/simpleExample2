@@ -1,7 +1,8 @@
 #!/usr/bin/perl
 #
 use strict;
-
+## no critic (BitwiseOperators)
+## no critic (ValuesAndExpressions::ProhibitAccessOfPrivateData)
 #Where to find our library and auxiliary code.
 use lib "..";
 use lib $ENV{PERL_GPIB} || "/projects/gpib";

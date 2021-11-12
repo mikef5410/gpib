@@ -11,6 +11,7 @@ use Exception::Class ( 'IOError', 'TransportError', 'TimeoutError' );
 ## no critic (ProhibitTwoArgOpen)
 ## no critic (ValuesAndExpressions::ProhibitAccessOfPrivateData)
 ## no critic (ProhibitNestedSubs)
+## no critic (BitwiseOperators)
 with( 'GPIBWrap', 'Throwable', 'CDR' );    #Use Try::Tiny to catch my errors
 ###############################################################################
 ###############################################################################
@@ -2706,12 +2707,13 @@ sub cdrLoopBW {
   $self->iwrite(":CRECovery1:CLBandwidth $bw;");
 }
 
-sub relock {
+sub cdrRelock {
   my $self = shift;
   $self->iwrite(":CRECovery1:RELock;");
+  $self->iOPC(20);
 }
 
-sub locked {
+sub cdrLocked {
   my $self = shift;
   return ( $self->iquery(":CRECovery1:LOCKed?") );
 }

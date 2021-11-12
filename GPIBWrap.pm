@@ -19,6 +19,7 @@ use constant 'TERM_NON_BLOCKED' => 8;
 use constant 'OK'               => 0;
 use constant 'ERR'              => 1;
 ## no critic (BitwiseOperators)
+## no critic (ValuesAndExpressions::ProhibitAccessOfPrivateData)
 with 'Throwable';    #Use Try::Tiny to catch my errors
 with 'MooseX::Log::Log4perl';
 has 'gpib'           => ( is => 'rw', default => undef );

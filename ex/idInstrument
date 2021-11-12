@@ -1,11 +1,13 @@
 #!/usr/bin/perl
 #
+use strict;
 use lib "..";
 use lib $ENV{PERL_GPIB} || "/projects/gpib";
 use Log::Log4perl qw(:easy);
 use Generic_Instrument;
 Log::Log4perl->easy_init($ERROR);
 my $cs = shift;
+
 if ( !length($cs) ) {
   print <<'EoF';
 Usage: idInstrument <connection string>

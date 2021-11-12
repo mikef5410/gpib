@@ -103,6 +103,9 @@ sub DEMOLISH {
 sub MuxActive {
   my $self = shift;
   my $in   = shift;
+  if ( !defined($in) ) {
+    return ( $self->ClockMult == 2 );
+  }
   if ($in) {
     $self->ClockMult(2);
   } else {
@@ -660,12 +663,13 @@ sub cdrLoopBW {
   }
 }
 
-sub relock {
+sub cdrRelock {
   my $self = shift;
   $self->iwrite(":INPut:CDR:RELOck;");
+  $self->iOPC(20);
 }
 
-sub locked {
+sub cdrLocked {
   my $self = shift;
   return ( !$self->clockLoss() );
 }

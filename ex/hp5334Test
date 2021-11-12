@@ -1,5 +1,6 @@
 #!/usr/bin/perl
 #
+use strict;
 use lib "/projects/gpib";
 use GPIBWrap;
 use HP_5334;

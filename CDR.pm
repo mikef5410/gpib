@@ -34,12 +34,12 @@ sub cdrLoopBW {
   print( STDERR "CDR role: %s called but isn't implemented.\n", ( caller(0) )[3] );
 }
 
-sub relock {
+sub cdrRelock {
   my $self = shift;
   print( STDERR "CDR role: %s called but isn't implemented.\n", ( caller(0) )[3] );
 }
 
-sub locked {
+sub cdrLocked {
   my $self = shift;
   print( STDERR "CDR role: %s called but isn't implemented.\n", ( caller(0) )[3] );
   return (0);

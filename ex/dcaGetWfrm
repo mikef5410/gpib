@@ -14,6 +14,8 @@ use Data::Dumper qw(Dumper);
 use Module::Runtime qw(use_module use_package_optimistically);
 use File::Basename;
 use Agilent_86100;
+## no critic (ValuesAndExpressions::ProhibitAccessOfPrivateData)
+## no critic (BitwiseOperators)
 my $chan  = "DIFF1";
 my $scope = Agilent_86100->new( connectString => "VXI11::dca-1::inst0" );
 
