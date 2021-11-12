@@ -12,14 +12,12 @@ use Module::Runtime qw(use_module use_package_optimistically);
 use Exception::Class ( 'IOError', 'TransportError', 'TimeoutError' );
 use Net::Telnet;    #For e2050Reset only
 use Log::Log4perl;
-
 use constant 'TERM_MAXCNT'      => 1;
 use constant 'TERM_CHR'         => 2;
 use constant 'TERM_END'         => 4;
 use constant 'TERM_NON_BLOCKED' => 8;
 use constant 'OK'               => 0;
 use constant 'ERR'              => 1;
-
 ## no critic (BitwiseOperators)
 with 'Throwable';    #Use Try::Tiny to catch my errors
 with 'MooseX::Log::Log4perl';
@@ -117,7 +115,6 @@ sub BUILD {
   my $self = shift;
   my $args = shift;
   if ( !length( $self->connectString ) ) { return; }
-
   Log::Log4perl->init_once();
 
   #Connection string can be VXI11::host::instr0
@@ -862,7 +859,6 @@ sub argCheck {
   }
   return (OK);
 }
-
 my $onoffStateGeneric = sub {
   my $self       = shift;
   my $mname      = shift;
@@ -877,7 +873,6 @@ my $onoffStateGeneric = sub {
   $on = ( $on != 0 ) ? 1 : 0;
   $self->iwrite( "$subsys," . $on );
 };
-
 my $scalarSettingGeneric = sub {
   my $self  = shift;
   my $mname = shift;
@@ -891,7 +886,6 @@ my $scalarSettingGeneric = sub {
   }
   $self->iwrite( "$subsys," . $val );
 };
-
 my $commandGeneric = sub {
   my $self       = shift;
   my $mname      = shift;
@@ -907,7 +901,6 @@ my $commandGeneric = sub {
 sub populateAccessors {
   my $self = shift;
   my $args = shift;
-
   my $meta = $self->meta;
   $self->logsubsys($self);
   foreach my $methodName ( keys( %{ $self->instrMethods } ) ) {
@@ -946,5 +939,4 @@ sub populateAccessors {
 
   #$meta->make_immutable;
 }
-
 1;

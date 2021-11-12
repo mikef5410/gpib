@@ -10,8 +10,7 @@ use Exception::Class ('UsageError');
 #use PDL;
 use constant 'OK'  => 0;
 use constant 'ERR' => 1;
-with( 'GPIBWrap', 'Throwable' );    #Use Try::Tiny to catch my errors
-
+with( 'GPIBWrap', 'Throwable', 'CDR' );    #Use Try::Tiny to catch my errors
 has 'ERatioMeasurement' => ( is => 'rw', default => undef );
 has 'ERatioAutoClean'   => ( is => 'rw', isa     => 'Bool', default => 1 );
 has 'JTOLMeasurement'   => ( is => 'rw', default => undef );
@@ -19,7 +18,6 @@ has 'JTOLAutoClean'     => ( is => 'rw', isa     => 'Bool', default => 1 );
 has 'LocationIn'        => ( is => 'rw', isa     => 'Str',  default => "M2.DataIn" );
 has 'LocationOut'       => ( is => 'rw', isa     => 'Str',  default => "M2.DataOut" );
 has 'ClockMult'         => ( is => 'rw', isa     => 'Int',  default => 2 );
-
 my $instrumentMethods = {
   jitterGlobal   => { scpi => ":SOURCE:JITTer:GLOBAL:STATE 'M1.System'",                       argtype => "BOOLEAN" },
   PJState        => { scpi => ":SOURCE:JITTer:LFRequency:PERiodic:STATE '!!LocationOut'",      argtype => "BOOLEAN" },
@@ -70,7 +68,6 @@ around 'iwrite' => sub {
   my $orig = shift;
   my $self = shift;
   my $arg  = shift;
-
   my $lin  = $self->LocationIn;
   my $lout = $self->LocationOut;
   $arg =~ s/!!LocationOut/$lout/g;
@@ -91,7 +88,9 @@ sub init {
     last if ( $err =~ /^0/ );                     # error 0 means buffer is empty
   }
   $self->iwrite("*CLS");
+  $self->cdrInit();
   #
+  __PACKAGE__->meta->make_immutable();
   return 0;
 }
 
@@ -104,7 +103,6 @@ sub DEMOLISH {
 sub MuxActive {
   my $self = shift;
   my $in   = shift;
-
   if ($in) {
     $self->ClockMult(2);
   } else {
@@ -133,7 +131,6 @@ sub ensureJTOL {
 sub pluginERATioClean {
   my $self         = shift;
   my $measurements = $self->iquery(":PLUGin:ERATio:CATalog?");
-
   if ( length($measurements) ) {
     foreach my $m ( split( ",", $measurements ) ) {
       $m =~ s/"//g;
@@ -363,7 +360,6 @@ sub PGPRBSpattern {
   } elsif ( $prbsPattern eq "PRBS23" ) {
     $pattern = "2^23-1";
   }
-
   $self->iwrite( sprintf( ":DATA:SEQuence:SET '!!LocationOut',PRBS,'%s'", $pattern ) );
   $self->iOPC(35);
 }
@@ -372,7 +368,6 @@ sub PGClockPattern {
   my $self     = shift;
   my $div      = shift || 2;
   my $blockLen = shift || 256;
-
   $self->iwrite( sprintf( ":DATA:SEQuence:SET '!!LocationOut',CLOCK,'%d'", $div ) );
   $self->iOPC(35);
 }
@@ -391,7 +386,6 @@ sub EDPRBSpattern {
   } elsif ( $prbsPattern eq "PRBS23" ) {
     $pattern = "2^23-1";
   }
-
   $self->iwrite( sprintf( ":DATA:SEQuence:SET '!!LocationIn',PRBS,'%s'", $pattern ) );
   $self->iOPC(35);
 }
@@ -478,7 +472,6 @@ sub autoAlign {
   my $ret;
   $ret = $self->iwrite(":INPut:ALIGnment:EYE:AUTO '!!LocationIn'");
   $self->iOPC(60);
-
   if ( $self->alignmentLoss ) {
     return (0);
   }
@@ -506,7 +499,6 @@ sub BERtime {
   my $period = shift;    #seconds
   my $count  = 100;
   my $res;
-
   $period = int($period);
   $period = ( $period < 1 ) ? 1 : $period;
   $self->ensureERatio();
@@ -555,7 +547,6 @@ sub simpleJTol {
   my $targetBER = shift;
   my $nowait    = shift || 0;
   my $count     = 100;
-
   $self->ensureJTOL();
   my $meas = $self->JTOLMeasurement;
 
@@ -576,7 +567,6 @@ sub simpleJTol {
   $self->iwrite( sprintf( ":PLUGin:JTOLerance:MSETup:ALGorithm '%s',ULOG", $meas ) );
   $self->iwrite( sprintf( ":PLUGin:JTOLerance:MSETup:LOG:SSIZe '%s',30%%", $meas ) );
   $self->jitterGlobal(1);
-
   while ( $self->syncLoss() && $count ) {
     sleep(0.1);
     $count--;
@@ -616,5 +606,67 @@ sub getJTOLresults {
   #@results=Location,( Frequency, Amplitude, NBits, NErrs, BER, PASS/FAIL ) repeated for each freq.
   return ( \@results );
 }
+###################################################
+# C D R   R o l e
+###################################################
+sub cdrInit {
+  my $self = shift;
+}
 
+sub cdrLoopOrder {
+  my $self      = shift;
+  my $loopOrder = shift;
+  my $lorder    = "FIRS";
+  if ( $loopOrder == 2 ) {
+    $lorder = "SEC";
+    $self->loopOrder(2);
+  } else {
+    $self->loopOrder(1);
+  }
+  $self->iwrite( sprintf( ":INPut:CDR:LORDer '!!LocationIn', %s", $lorder ) );
+}
+
+sub cdrState {
+  my $self = shift;
+  my $on   = shift;
+  if ( $on != 0 ) {
+    $self->$self->iwrite(":CLOCK:SOURce '!!LocationIn', CDR");
+    $self->iwrite(":INPut:CDR:STATe '!!LocationIn',1");
+    $self->iwrite(":INPut:CDR:AUTO '!!LocationIn',1");
+    $self->iwrite(":INPut:CDR:OPTimize '!!LocationIn'");
+    $self->iOPC(20);
+  } else {
+    $self->iwrite(":INPut:CDR:STATe '!!LocationIn',0");
+    $self->iOPC(20);
+  }
+}
+
+sub cdrRate {
+  my $self = shift;
+  my $freq = shift;
+
+  #Nothing to do
+}
+
+sub cdrLoopBW {
+  my $self    = shift;
+  my $bw      = shift;
+  my $peaking = shift || 1;    #dB of peaking if second order
+  if ( $self->loopOrder == 1 ) {
+    $self->iwrite( sprintf( ":INPut:CDR:FIRSt:LBANdwidth '!!LocationIn',%g", $bw ) );
+  } else {
+    $self->iwrite( sprintf( ":INPut:CDR:SECond:LBANdwidth '!!LocationIn',%g", $bw ) );
+    $self->iwrite( sprintf( ":INPut:CDR:SECond:PEAKing '!!LocationIn',%g",    $peaking ) );
+  }
+}
+
+sub relock {
+  my $self = shift;
+  $self->iwrite(":INPut:CDR:RELOck;");
+}
+
+sub locked {
+  my $self = shift;
+  return ( !$self->clockLoss() );
+}
 1;

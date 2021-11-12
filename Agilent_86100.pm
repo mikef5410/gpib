@@ -11,7 +11,7 @@ use Exception::Class ( 'IOError', 'TransportError', 'TimeoutError' );
 ## no critic (ProhibitTwoArgOpen)
 ## no critic (ValuesAndExpressions::ProhibitAccessOfPrivateData)
 ## no critic (ProhibitNestedSubs)
-with( 'GPIBWrap', 'Throwable' );    #Use Try::Tiny to catch my errors
+with( 'GPIBWrap', 'Throwable', 'CDR' );    #Use Try::Tiny to catch my errors
 ###############################################################################
 ###############################################################################
 ##
@@ -22,6 +22,11 @@ with( 'GPIBWrap', 'Throwable' );    #Use Try::Tiny to catch my errors
 ################################################################################
 # Reset: Send the *RST command
 ################################################################################
+sub init {
+  my $self = shift;
+  $self->cdrInit();
+}
+
 sub Reset() {
   my $self = shift;
   $self->iwrite('*RST');
@@ -2658,6 +2663,57 @@ sub Cal108 {
   } else {
     printf("No 86108 module found!");
   }
+}
+###################################################
+# C D R   R o l e
+###################################################
+sub cdrInit {
+  my $self = shift;
+}
+
+sub cdrLoopOrder {
+  my $self      = shift;
+  my $loopOrder = shift;
+
+  #Nothing to do.
+}
+
+sub cdrState {
+  my $self = shift;
+  my $on   = shift;
+  if ( $on != 0 ) {
+    $self->iwrite(":PTIMebase1:RSOurce INTernal;");
+    $self->iwrite(":PTIMebase1:RMETHod OLINearity;");
+    $self->iwrite(":PTIMebase1:STATe ON;");
+    $self->iwrite(":PTIMebase1:RTReference;");
+    $self->iwrite(":CRECovery1:SOURce DIFFerential");
+    $self->iwrtie(":CRECovery1:LSELect:AUTomatic");
+    $self->iOPC(20);
+    $self->iwrite(":SYSTem:AUToscale;");
+    $self->iOPC(20);
+  }
+}
+
+sub cdrRate {
+  my $self = shift;
+  my $freq = shift;
+  $self->iwrite(":CRECovery1:CRATe $freq;");
+}
+
+sub cdrLoopBW {
+  my $self = shift;
+  my $bw   = shift;
+  $self->iwrite(":CRECovery1:CLBandwidth $bw;");
+}
+
+sub relock {
+  my $self = shift;
+  $self->iwrite(":CRECovery1:RELock;");
+}
+
+sub locked {
+  my $self = shift;
+  return ( $self->iquery(":CRECovery1:LOCKed?") );
 }
 __PACKAGE__->meta->make_immutable;
 1;
