@@ -267,9 +267,7 @@ Just an iwrite($arg) followed by an iread().
 sub iquery {
   my $self = shift;
   my $arg  = shift;
-  return                                                                            if ( !defined($self) );
   $self->log( $self->logsubsys . ".IOTrace" )->info( sprintf( "iquery %s", $arg ) ) if ( Log::Log4perl->initialized() );
-  return                                                                            if ( !defined( $self->gpib ) );
   $self->iwrite($arg);
   return ( $self->iread() );
 }

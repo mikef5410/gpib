@@ -4,7 +4,7 @@ package CDR;
 use Moose::Role;
 
 # This class role exposes a unified CDR interface
-has 'loopOrder' => { is => 'rw', isa => 'INT', default => 2 };
+has 'loopOrder' => ( is => 'rw', isa => 'Int', default => 2 );
 
 sub cdrInit {
   my $self = shift;

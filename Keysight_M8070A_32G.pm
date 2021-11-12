@@ -95,9 +95,12 @@ sub init {
 }
 
 sub DEMOLISH {
-  my $self = shift;
-  $self->pluginERATioClean();
-  $self->pluginJTOLClean();
+   my $self = shift;
+
+   if (defined($self->gpib)) {
+      $self->pluginERATioClean();
+      $self->pluginJTOLClean();
+   }
 }
 
 sub MuxActive {
