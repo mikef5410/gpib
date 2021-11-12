@@ -95,12 +95,12 @@ sub init {
 }
 
 sub DEMOLISH {
-   my $self = shift;
+  my $self = shift;
 
-   if (defined($self->gpib)) {
-      $self->pluginERATioClean();
-      $self->pluginJTOLClean();
-   }
+  if ( defined( $self->gpib ) ) {
+    $self->pluginERATioClean();
+    $self->pluginJTOLClean();
+  }
 }
 
 sub MuxActive {
@@ -636,7 +636,8 @@ sub cdrState {
   my $self = shift;
   my $on   = shift;
   if ( $on != 0 ) {
-    $self->$self->iwrite(":CLOCK:SOURce '!!LocationIn', CDR");
+
+    #$self->$self->iwrite(":CLOCK:SOURce '!!LocationIn', CDR"); #My 8041 module doesn't support this
     $self->iwrite(":INPut:CDR:STATe '!!LocationIn',1");
     $self->iwrite(":INPut:CDR:AUTO '!!LocationIn',1");
     $self->iwrite(":INPut:CDR:OPTimize '!!LocationIn'");
