@@ -89,8 +89,6 @@ sub init {
   }
   $self->iwrite("*CLS");
   $self->cdrInit();
-  $self->iwrite(":SOURCE:JITTer:HFRequency:UNIT '!!LocationOut',UINTerval");
-  $self->iwrite(":SOURCE:JITTer:LFRequency:UNIT '!!LocationOut',UINTerval");
   #
   __PACKAGE__->meta->make_immutable();
   return 0;
@@ -211,6 +209,7 @@ sub maxLFSJ {
 
   return (undef) if ( $freq < 100 );
   return (undef) if ( $freq > 5e6 );
+  $self->iwrite(":SOURCE:JITTer:LFRequency:UNIT '!!LocationOut',UINTerval");
   $self->PJFrequency($freq);
   my $max = $self->iquery(":SOURce:JITTer:LFRequency:PERiodic1:AMPLitude? '!!LocationOut',MAX");
 
@@ -227,8 +226,10 @@ sub maxHFSJ {
   my $freq = shift;
   return (undef) if ( $freq < 1000 );
   return (undef) if ( $freq > 500e6 );
+
+  $self->iwrite(":SOURCE:JITTer:HFRequency:UNIT '!!LocationOut',UINTerval");
   $self->PJ1Frequency($freq);
-  my $max = iquery(":SOURce:JITTer:HFRequency:PERiodic2:AMPLitude? '!!LocationOut',MAX");
+  my $max = $self->iquery(":SOURce:JITTer:HFRequency:PERiodic1:AMPLitude? '!!LocationOut',MAX");
   return ( $max * 1000.0 );    #mUI
 }
 
