@@ -20,9 +20,9 @@ has 'LocationOut'       => ( is => 'rw', isa     => 'Str',  default => "M2.DataO
 has 'ClockMult'         => ( is => 'rw', isa     => 'Int',  default => 2 );
 my $instrumentMethods = {
   jitterGlobal   => { scpi => ":SOURCE:JITTer:GLOBAL:STATE 'M1.System'",                       argtype => "BOOLEAN" },
-  PJState        => { scpi => ":SOURCE:JITTer:LFRequency:PERiodic:STATE '!!LocationOut'",      argtype => "BOOLEAN" },
-  PJAmplitude    => { scpi => ":SOURce:JITTer:LFRequency:PERiodic:AMPLitude '!!LocationOut'",  argtype => "NUMBER" },
-  PJFrequency    => { scpi => ":SOURce:JITTer:LFRequency:PERiodic:FREQuency '!!LocationOut'",  argtype => "NUMBER" },
+  PJState        => { scpi => ":SOURCE:JITTer:LFRequency:PERiodic1:STATE '!!LocationOut'",     argtype => "BOOLEAN" },
+  PJAmplitude    => { scpi => ":SOURce:JITTer:LFRequency:PERiodic1:AMPLitude '!!LocationOut'", argtype => "NUMBER" },
+  PJFrequency    => { scpi => ":SOURce:JITTer:LFRequency:PERiodic1:FREQuency '!!LocationOut'", argtype => "NUMBER" },
   PJ1State       => { scpi => ":SOURce:JITTer:HFRequency:PERiodic1:STATe '!!LocationOut'",     argtype => "BOOLEAN" },
   PJ1Amplitude   => { scpi => ":SOURce:JITTer:HFRequency:PERiodic1:AMPLitude '!!LocationOut'", argtype => "NUMBER" },
   PJ1Frequency   => { scpi => ":SOURce:JITTer:HFRequency:PERiodic1:FREQuency '!!LocationOut'", argtype => "NUMBER" },
@@ -89,6 +89,8 @@ sub init {
   }
   $self->iwrite("*CLS");
   $self->cdrInit();
+  $self->iwrite(":SOURCE:JITTer:HFRequency:UNIT '!!LocationOut',UINTerval");
+  $self->iwrite(":SOURCE:JITTer:LFRequency:UNIT '!!LocationOut',UINTerval");
   #
   __PACKAGE__->meta->make_immutable();
   return 0;
@@ -206,14 +208,18 @@ sub HFSJok {
 sub maxLFSJ {
   my $self = shift;
   my $freq = shift;
+
   return (undef) if ( $freq < 100 );
   return (undef) if ( $freq > 5e6 );
-  if ( $freq < 1.0e4 ) {
-    return (1000.0);
-  }
-  my $rate = 2.0 * $self->clockFreq();
-  my $max  = 1000 * 1.235 * ( $rate / 1e3 ) / $freq;    #mUI
-  return ($max);
+  $self->PJFrequency($freq);
+  my $max = $self->iquery(":SOURce:JITTer:LFRequency:PERiodic1:AMPLitude? '!!LocationOut',MAX");
+
+  #if ( $freq < 1.0e4 ) {
+  #  return (1000.0);
+  #}
+  #my $rate = 2.0 * $self->clockFreq();
+  #my $max  = 1000 * 1.235 * ( $rate / 1e3 ) / $freq;    #mUI
+  return ( $max * 1000.0 );    #mUI
 }
 
 sub maxHFSJ {
@@ -221,12 +227,15 @@ sub maxHFSJ {
   my $freq = shift;
   return (undef) if ( $freq < 1000 );
   return (undef) if ( $freq > 500e6 );
-  return (1000.0);                                      #mUI
+  $self->PJ1Frequency($freq);
+  my $max = iquery(":SOURce:JITTer:HFRequency:PERiodic2:AMPLitude? '!!LocationOut',MAX");
+  return ( $max * 1000.0 );    #mUI
 }
 
 sub maxSJ {
-  my $self  = shift;
-  my $freq  = shift;
+  my $self = shift;
+  my $freq = shift;
+
   my $maxLJ = $self->maxLFSJ($freq);
   my $maxHJ = $self->maxHFSJ($freq);
   if ( defined($maxLJ) && defined($maxHJ) ) {
