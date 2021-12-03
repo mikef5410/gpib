@@ -19,6 +19,7 @@ has 'LocationIn'        => ( is => 'rw', isa     => 'Str',  default => "M2.DataI
 has 'LocationOut'       => ( is => 'rw', isa     => 'Str',  default => "M2.DataOut" );
 has 'ClockMult'         => ( is => 'rw', isa     => 'Int',  default => 2 );
 my $instrumentMethods = {
+  sscGlobal      => { scpi => ":SOURCE:SSCLocking:GLOBal:STATE 'M1.System'",                   argtype => "BOOLEAN" },
   jitterGlobal   => { scpi => ":SOURCE:JITTer:GLOBAL:STATE 'M1.System'",                       argtype => "BOOLEAN" },
   PJState        => { scpi => ":SOURCE:JITTer:LFRequency:PERiodic1:STATE '!!LocationOut'",     argtype => "BOOLEAN" },
   PJAmplitude    => { scpi => ":SOURce:JITTer:LFRequency:PERiodic1:AMPLitude '!!LocationOut'", argtype => "NUMBER" },
