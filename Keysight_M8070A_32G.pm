@@ -1,3 +1,4 @@
+
 # -*- mode: perl -*-
 package Keysight_M8070A_32G;
 use Moose;
@@ -208,8 +209,10 @@ sub maxLFSJ {
   my $self = shift;
   my $freq = shift;
 
+  $self->PJAmplitude(0);    #Set amplitude to zero because current ampl at new freq might be illegal
   return (undef) if ( $freq < 100 );
-  return (undef) if ( $freq > 5e6 );
+  my $maxF = $self->iquery(":SOURce:JITTer:LFRequency:PERiodic1:FREQuency? '!!LocationOut',MAX");
+  return (undef) if ( $freq > $maxF );
   $self->iwrite(":SOURCE:JITTer:LFRequency:UNIT '!!LocationOut',UINTerval");
   $self->PJFrequency($freq);
   my $max = $self->iquery(":SOURce:JITTer:LFRequency:PERiodic1:AMPLitude? '!!LocationOut',MAX");
@@ -226,8 +229,10 @@ sub maxHFSJ {
   my $self = shift;
   my $freq = shift;
   return (undef) if ( $freq < 1000 );
-  return (undef) if ( $freq > 500e6 );
 
+  $self->PJ1Amplitude(0);      #Set amplitude to zero because current ampl at new freq might be illegal
+  my $maxF = $self->iquery(":SOURce:JITTer:HFRequency:PERiodic1:FREQuency? '!!LocationOut',MAX");
+  return (undef) if ( $freq > $maxF );
   $self->iwrite(":SOURCE:JITTer:HFRequency:UNIT '!!LocationOut',UINTerval");
   $self->PJ1Frequency($freq);
   my $max = $self->iquery(":SOURce:JITTer:HFRequency:PERiodic1:AMPLitude? '!!LocationOut',MAX");
@@ -240,12 +245,35 @@ sub maxSJ {
 
   my $maxLJ = $self->maxLFSJ($freq);
   my $maxHJ = $self->maxHFSJ($freq);
-  if ( defined($maxLJ) && defined($maxHJ) ) {
-    return ( ( $maxLJ >= $maxHJ ) ? $maxLJ : $maxHJ );
+  my $useLJ = 1;
+  if ( !defined($maxLJ) && !defined($maxHJ) ) {
+    return ( undef, undef ) if (wantarray);
+    return (undef);
   }
-  return ($maxLJ) if ( defined($maxLJ) );
-  return ($maxHJ) if ( defined($maxHJ) );
-  return (undef);
+  if ( defined($maxLJ) && defined($maxHJ) ) {
+    if ( $maxLJ >= $maxHJ ) {
+      $useLJ = 1;
+    } else {
+      $useLJ = 0;
+    }
+  } else {
+    if ( defined($maxLJ) ) {
+      $useLJ = 1;
+    }
+    if ( defined($maxHJ) ) {
+      $useLJ = 0;
+    }
+  }
+  if ($useLJ) {
+
+    #printf("Max jitter@%g is %g mUI (LFJ)\n",$freq, $maxLJ*1000.0);
+    return ( $maxLJ, 1 ) if (wantarray);
+    return ($maxLJ);
+  }
+
+  #printf("Max jitter@%g is %g mUI (HFJ)\n",$freq, $maxHJ*1000.0);
+  return ( $maxHJ, 0 ) if (wantarray);
+  return ($maxHJ);
 }
 
 sub simpleSJ {    #(sjfreq, amplitude mUI,  onoff)
@@ -267,8 +295,12 @@ sub simpleSJ {    #(sjfreq, amplitude mUI,  onoff)
   }
   if ( $self->LFSJok( $freq, $amplitude ) ) {    #We'll use LF PJ
     $lf = 1;
+
+    #print "using LF jitter\n";
   } elsif ( $self->HFSJok( $freq, $amplitude ) ) {    #Use HF PJ
     $lf = 0;
+
+    #print "using HF jitter\n";
   } else {
     UsageError->throw( { err => "Bad SJ combination of freq and amplitude" } );
   }
