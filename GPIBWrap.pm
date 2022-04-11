@@ -883,11 +883,8 @@ my $scalarSettingGeneric = sub {
   my $subsys     = $descriptor->{scpi};
   my $queryonly  = $descriptor->{queryonly} || 0;
   if ( !defined($val) ) {
-    $val = "";
-    if ($queryonly) {
-      $val = $self->iquery( queryform($subsys) );
-      return ($val);
-    }
+    $val = $self->iquery( queryform($subsys) );
+    return ($val);
   }
   if ($queryonly) {
     UsageError->throw( { err => sprintf( "%s is a query only command", $mname ) } );
