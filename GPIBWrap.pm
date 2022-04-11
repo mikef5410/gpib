@@ -9,7 +9,7 @@ use Time::HiRes qw(sleep usleep gettimeofday tv_interval);
 use Time::Out qw(timeout);
 use Carp qw(cluck longmess shortmess);
 use Module::Runtime qw(use_module use_package_optimistically);
-use Exception::Class ( 'IOError', 'TransportError', 'TimeoutError' );
+use Exception::Class ( 'IOError', 'TransportError', 'TimeoutError', 'UsageError' );
 use Net::Telnet;    #For e2050Reset only
 use Log::Log4perl;
 use constant 'TERM_MAXCNT'      => 1;
@@ -823,8 +823,8 @@ sub trimwhite {
 sub queryform {
   my $in = shift;
   $in = trimwhite($in);
-  if ( $in =~ /\s+\'/ ) {    #A subsystem qualifier?
-    $in =~ s/\s+\'/? '/;
+  if ( $in =~ /\s+./ ) {    #A subsystem qualifier or query arg?
+    $in =~ s/\s+(.)/? $1/;
   } else {
     $in = $in . '?';
   }
@@ -872,6 +872,8 @@ my $onoffStateGeneric = sub {
   $on = ( $on != 0 ) ? 1 : 0;
   $self->iwrite( "$subsys," . $on );
 };
+
+#We get here is argtype != NONE
 my $scalarSettingGeneric = sub {
   my $self  = shift;
   my $mname = shift;
@@ -879,9 +881,16 @@ my $scalarSettingGeneric = sub {
   $self->argCheck( $mname, $val );
   my $descriptor = $self->instrMethods->{$mname};
   my $subsys     = $descriptor->{scpi};
+  my $queryonly  = $descriptor->{queryonly} || 0;
   if ( !defined($val) ) {
-    my $val = $self->iquery( queryform($subsys) );
-    return ($val);
+    $val = "";
+    if ($queryonly) {
+      $val = $self->iquery( queryform($subsys) );
+      return ($val);
+    }
+  }
+  if ($queryonly) {
+    UsageError->throw( { err => sprintf( "%s is a query only command", $mname ) } );
   }
   $self->iwrite( "$subsys," . $val );
 };
@@ -890,6 +899,12 @@ my $commandGeneric = sub {
   my $mname      = shift;
   my $descriptor = $self->instrMethods->{$mname};
   my $subsys     = $descriptor->{scpi};
+  my $queryonly  = $descriptor->{queryonly} || 0;
+  my $val;
+  if ($queryonly) {
+    $val = $self->iquery( queryform($subsys) );
+    return ($val);
+  }
   $self->iwrite("$subsys");
 };
 

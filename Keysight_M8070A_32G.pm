@@ -1,4 +1,3 @@
-
 # -*- mode: perl -*-
 package Keysight_M8070A_32G;
 use Moose;
@@ -98,7 +97,6 @@ sub init {
 
 sub DEMOLISH {
   my $self = shift;
-
   if ( defined( $self->gpib ) ) {
     $self->pluginERATioClean();
     $self->pluginJTOLClean();
@@ -208,7 +206,6 @@ sub HFSJok {
 sub maxLFSJ {
   my $self = shift;
   my $freq = shift;
-
   $self->PJAmplitude(0);    #Set amplitude to zero because current ampl at new freq might be illegal
   return (undef) if ( $freq < 100 );
   my $maxF = $self->iquery(":SOURce:JITTer:LFRequency:PERiodic1:FREQuency? '!!LocationOut',MAX");
@@ -229,7 +226,6 @@ sub maxHFSJ {
   my $self = shift;
   my $freq = shift;
   return (undef) if ( $freq < 1000 );
-
   $self->PJ1Amplitude(0);      #Set amplitude to zero because current ampl at new freq might be illegal
   my $maxF = $self->iquery(":SOURce:JITTer:HFRequency:PERiodic1:FREQuency? '!!LocationOut',MAX");
   return (undef) if ( $freq > $maxF );
@@ -240,9 +236,8 @@ sub maxHFSJ {
 }
 
 sub maxSJ {
-  my $self = shift;
-  my $freq = shift;
-
+  my $self  = shift;
+  my $freq  = shift;
   my $maxLJ = $self->maxLFSJ($freq);
   my $maxHJ = $self->maxHFSJ($freq);
   my $useLJ = 1;
