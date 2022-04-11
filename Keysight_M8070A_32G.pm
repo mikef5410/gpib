@@ -485,6 +485,7 @@ sub errorInsertion {
 sub clockLoss {
   my $self = shift;
   my $ret  = $self->iquery(":STATus:INSTrument:CLOSs? '!!LocationIn'");
+  $ret+=0;
   return ( $ret != 0 );
 }
 
