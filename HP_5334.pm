@@ -56,7 +56,7 @@ SWITCH: {
       return ($in);
       last(SWITCH);
     }
-    TransportError->throw( { err => 'Unknown GPIB transport' } );
+    TransportError->throw( { error => 'Unknown GPIB transport' } );
   }
 }
 

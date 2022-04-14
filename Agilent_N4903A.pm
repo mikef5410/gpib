@@ -214,7 +214,7 @@ sub prbsSet {
   if ( $prbsPatt =~ /PRB[SN](7|10|11|13|15|23|31)/ ) {
     $self->iwrite(":SOURCE1:PATTERN:SELECT $prbsPatt;");
   } else {
-    UsageError->throw( { err => "Bad prbs pattern choice" } );
+    UsageError->throw( { error => "Bad prbs pattern choice" } );
   }
 
   #my $res = $self->iOPC(25);
@@ -226,7 +226,7 @@ sub prbsSetED {
   if ( $prbsPatt =~ /PRB[SN](7|10|11|13|15|23|31)/ ) {
     $self->iwrite(":SENSEE1:PATTERN:SELECT $prbsPatt;");
   } else {
-    UsageError->throw( { err => "Bad prbs pattern choice" } );
+    UsageError->throw( { error => "Bad prbs pattern choice" } );
   }
 
   #my $res = $self->iOPC(25);
@@ -304,7 +304,7 @@ sub subrateDivisor {
   if ( $div >= 2 && $div <= 128 ) {
     $self->iwrite( sprintf( ":SOURCE5:DIVIDER %d;", $div ) );
   } else {
-    UsageError->throw( { err => "Subrate divisor out of range" } );
+    UsageError->throw( { error => "Subrate divisor out of range" } );
   }
 
   #$self->iOPC();
@@ -458,7 +458,7 @@ SW: {
   }
   if ( $distOK == 0 ) {
 
-    #UsageError->throw( {err => "Bad SJ distribution select"} );
+    #UsageError->throw( {error => "Bad SJ distribution select"} );
     $self->logger->logconfess("Bad SJ distribution select: $dist, should be one of DATA, CLOCk, or BOTH");
   }
   $self->iwrite( sprintf( ":SOURCE8:JITTER:SIN:DISTRIBUTION %s;", $dist ) );
@@ -488,7 +488,7 @@ SW: {
   }
   if ( $funcOK == 0 ) {
 
-    #UsageError->throw( {err => "Bad PJ function select"} );
+    #UsageError->throw( {error => "Bad PJ function select"} );
     $self->logger->logconfess("Bad PJ function select: $function, should be one of SIN, SQU, or TRI");
   }
   $self->iwrite( sprintf( ":SOURCE8:JITTER:PER1:FUNCTION:SELECT %s;", $function ) );
@@ -518,7 +518,7 @@ SW: {
   }
   if ( $funcOK == 0 ) {
 
-    #UsageError->throw( {err => "Bad PJ function select"} );
+    #UsageError->throw( {error => "Bad PJ function select"} );
     $self->logger->logconfess("Bad PJ function select: $function, should be one of SIN, SQU, or TRI");
   }
   $self->iwrite( sprintf( ":SOURCE8:JITTER:PER2:FUNCTION:SELECT %s;", $function ) );

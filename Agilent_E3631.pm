@@ -54,7 +54,7 @@ SW: {
       $chan = "N25V";
       last SW;
     }
-    UsageError->throw( err => "Bad channel specifier: \"$chan\"" );
+    UsageError->throw( error => "Bad channel specifier: \"$chan\"" );
   }
   $self->CurrentChan($chan);
   $self->cmdSetup();

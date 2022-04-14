@@ -174,10 +174,10 @@ SWITCH: {
       last(SWITCH);
     }
     if ( $self->gpib()->isa("RPCINST") ) {
-      TransportError->throw( { err => '"RPCINST" not implemented' } );
+      TransportError->throw( { error => '"RPCINST" not implemented' } );
       last(SWITCH);
     }
-    TransportError->throw( { err => 'Unknown GPIB transport' } );
+    TransportError->throw( { error => 'Unknown GPIB transport' } );
   }
 }
 
@@ -209,7 +209,7 @@ SWITCH: {
       $self->gpib()->iwrite($arg);
       last(SWITCH);
     }
-    TransportError->throw( { err => 'Unknown GPIB transport' } );
+    TransportError->throw( { error => 'Unknown GPIB transport' } );
   }
 }
 
@@ -250,7 +250,7 @@ SWITCH: {
       return ($in);
       last(SWITCH);
     }
-    TransportError->throw( { err => 'Unknown GPIB transport' } );
+    TransportError->throw( { error => 'Unknown GPIB transport' } );
   }
 }
 
@@ -328,7 +328,7 @@ sub iOPC {
     my @errs = $self->getErrors();
     $self->log( $self->logsubsys . ".IOTrace" )->warning( join( "\n", @errs ) ) if ( Log::Log4perl->initialized() );
 
-    #TimeoutError->throw( { err => 'iOPC timeout' });
+    #TimeoutError->throw( { error => 'iOPC timeout' });
     return (-1);
   }
 
@@ -389,10 +389,10 @@ SWITCH: {
       last(SWITCH);
     }
     if ( $self->gpib()->isa("RPCINST") ) {
-      TransportError->throw( { err => '"RPCINST" not implemented' } );
+      TransportError->throw( { error => '"RPCINST" not implemented' } );
       last(SWITCH);
     }
-    TransportError->throw( { err => 'Unknown GPIB transport' } );
+    TransportError->throw( { error => 'Unknown GPIB transport' } );
   }
 }
 
@@ -429,7 +429,7 @@ SWITCH: {
       return ($rval);
       last(SWITCH);
     }
-    TransportError->throw( { err => 'Unknown GPIB transport' } );
+    TransportError->throw( { error => 'Unknown GPIB transport' } );
   }
 }
 
@@ -456,10 +456,10 @@ SWITCH: {
       last(SWITCH);
     }
     if ( $self->gpib()->isa("RPCINST") ) {
-      TransportError->throw( { err => '"RPCINST" not implemented' } );
+      TransportError->throw( { error => '"RPCINST" not implemented' } );
       last(SWITCH);
     }
-    TransportError->throw( { err => 'Unknown GPIB transport' } );
+    TransportError->throw( { error => 'Unknown GPIB transport' } );
   }
 }
 
@@ -484,10 +484,10 @@ SWITCH: {
       last(SWITCH);
     }
     if ( $self->gpib()->isa("RPCINST") ) {
-      TransportError->throw( { err => '"RPCINST" not implemented' } );
+      TransportError->throw( { error => '"RPCINST" not implemented' } );
       last(SWITCH);
     }
-    TransportError->throw( { err => 'Unknown GPIB transport' } );
+    TransportError->throw( { error => 'Unknown GPIB transport' } );
   }
 }
 
@@ -513,10 +513,10 @@ SWITCH: {
       last(SWITCH);
     }
     if ( $self->gpib()->isa("RPCINST") ) {
-      TransportError->throw( { err => '"RPCINST" not implemented' } );
+      TransportError->throw( { error => '"RPCINST" not implemented' } );
       last(SWITCH);
     }
-    TransportError->throw( { err => 'Unknown GPIB transport' } );
+    TransportError->throw( { error => 'Unknown GPIB transport' } );
   }
 }
 
@@ -541,10 +541,10 @@ SWITCH: {
       last(SWITCH);
     }
     if ( $self->gpib()->isa("RPCINST") ) {
-      TransportError->throw( { err => '"RPCINST" not implemented' } );
+      TransportError->throw( { error => '"RPCINST" not implemented' } );
       last(SWITCH);
     }
-    TransportError->throw( { err => 'Unknown GPIB transport' } );
+    TransportError->throw( { error => 'Unknown GPIB transport' } );
   }
 }
 
@@ -572,7 +572,7 @@ SWITCH: {
       $self->gpib()->iclear();
       last(SWITCH);
     }
-    TransportError->throw( { err => 'Unknown GPIB transport' } );
+    TransportError->throw( { error => 'Unknown GPIB transport' } );
   }
 }
 
@@ -600,7 +600,7 @@ SWITCH: {
       $self->gpib()->itrigger();
       last(SWITCH);
     }
-    TransportError->throw( { err => 'Unknown GPIB transport' } );
+    TransportError->throw( { error => 'Unknown GPIB transport' } );
   }
 }
 
@@ -628,7 +628,7 @@ SWITCH: {
       $self->gpib()->ilocal();
       last(SWITCH);
     }
-    TransportError->throw( { err => 'Unknown GPIB transport' } );
+    TransportError->throw( { error => 'Unknown GPIB transport' } );
   }
 }
 
@@ -656,7 +656,7 @@ SWITCH: {
       $self->gpib()->iremote();
       last(SWITCH);
     }
-    TransportError->throw( { err => 'Unknown GPIB transport' } );
+    TransportError->throw( { error => 'Unknown GPIB transport' } );
   }
 }
 
@@ -684,7 +684,7 @@ SWITCH: {
       $self->gpib()->iunlock();
       last(SWITCH);
     }
-    TransportError->throw( { err => 'Unknown GPIB transport' } );
+    TransportError->throw( { error => 'Unknown GPIB transport' } );
   }
 }
 
@@ -712,7 +712,7 @@ SWITCH: {
       $self->gpib()->idisconnect();
       last(SWITCH);
     }
-    TransportError->throw( { err => 'Unknown GPIB transport' } );
+    TransportError->throw( { error => 'Unknown GPIB transport' } );
   }
 }
 
@@ -887,7 +887,7 @@ my $scalarSettingGeneric = sub {
     return ($val);
   }
   if ($queryonly) {
-    UsageError->throw( { err => sprintf( "%s is a query only command", $mname ) } );
+    UsageError->throw( { error => sprintf( "%s is a query only command", $mname ) } );
   }
   $self->iwrite( "$subsys," . $val );
 };

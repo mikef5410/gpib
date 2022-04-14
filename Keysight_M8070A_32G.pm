@@ -286,7 +286,7 @@ sub simpleSJ {    #(sjfreq, amplitude mUI,  onoff)
     $self->PJ1State(0);
   }
   if ( $freq < 100 || $freq > 500e6 ) {
-    UsageError->throw( { err => sprintf( "SJ freq out of range: %g", $freq ) } );
+    UsageError->throw( { error => sprintf( "SJ freq out of range: %g", $freq ) } );
   }
   if ( $self->LFSJok( $freq, $amplitude ) ) {    #We'll use LF PJ
     $lf = 1;
@@ -297,7 +297,7 @@ sub simpleSJ {    #(sjfreq, amplitude mUI,  onoff)
 
     #print "using HF jitter\n";
   } else {
-    UsageError->throw( { err => "Bad SJ combination of freq and amplitude" } );
+    UsageError->throw( { error => "Bad SJ combination of freq and amplitude" } );
   }
   $self->iwrite(":SOURCE:JITTer:HFRequency:UNIT '!!LocationOut',UINTerval");
   $self->iwrite(":SOURCE:JITTer:LFRequency:UNIT '!!LocationOut',UINTerval");
@@ -319,7 +319,7 @@ sub txDeemphasis {
   my $self = shift;
   my $taps = shift;    #ref to array
   if ( scalar(@$taps) != 7 ) {
-    UsageError->throw( { err => sprintf("txDeemphasis requires argument to be array ref of 7 tap values") } );
+    UsageError->throw( { error => sprintf("txDeemphasis requires argument to be array ref of 7 tap values") } );
   }
   $self->deemphasisPre2( $taps->[0] );
   $self->deemphasisPre1( $taps->[1] );
