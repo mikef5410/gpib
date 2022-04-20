@@ -69,9 +69,8 @@ sub iOPC {
   if ($timeout) {
     while ( tv_interval($tstart) <= $timeout ) {
       my $stb = $self->ireadstb();
-
       #$self->log('Agilent86100.IOTrace')->info(sprintf("STB: 0x%x\n",$stb));
-      if ( $stb & ( 1 << 4 ) ) {    #MAV bit (4) set?
+      if ( $stb & ( 0x30 ) ) {    #MAV bit (4) or ESB bit (5) set?
         my $x = $self->iread();     #$self->log('Agilent86100.IOTrace')->info(sprintf("OPC Read: 0x%x\n",$x));
         return (1);                 #Good to go...
       }
@@ -94,7 +93,7 @@ sub iOPC {
   my $lc = 0;
   while (1) {
     $ret = $self->ireadstb() || 0;
-    if ( $ret & ( 0x1 << 4 ) ) {
+    if ( $ret & ( 0x30 ) ) {
       return (1);
     }
 
