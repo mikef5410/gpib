@@ -5,9 +5,9 @@ package GPIBWrap;
 #use Moose;
 #use namespace::autoclean;
 use Moose::Role;
-use Time::HiRes qw(sleep usleep gettimeofday tv_interval);
-use Time::Out qw(timeout);
-use Carp qw(cluck longmess shortmess);
+use Time::HiRes     qw(sleep usleep gettimeofday tv_interval);
+use Time::Out       qw(timeout);
+use Carp            qw(cluck longmess shortmess);
 use Module::Runtime qw(use_module use_package_optimistically);
 use Exception::Class ( 'IOError', 'TransportError', 'TimeoutError', 'UsageError' );
 use Net::Telnet;    #For e2050Reset only
@@ -194,6 +194,12 @@ Send a string ($arg) to the instrument.
 sub iwrite {
   my $self = shift;
   my $arg  = shift;
+  return ( $self->_iwrite($arg) );
+}
+
+sub _iwrite {
+  my $self = shift;
+  my $arg  = shift;
   return                                                                            if ( !defined($self) );
   $self->log( $self->logsubsys . ".IOTrace" )->info( sprintf( "iwrite %s", $arg ) ) if ( Log::Log4perl->initialized() );
   return                                                                            if ( !defined( $self->gpib ) );
@@ -269,7 +275,17 @@ sub iquery {
   my $arg  = shift;
   $self->log( $self->logsubsys . ".IOTrace" )->info( sprintf( "iquery %s", $arg ) ) if ( Log::Log4perl->initialized() );
   $self->iwrite($arg);
-  return ( $self->iread() );
+  my $loop = 1;
+  while ($loop) {
+    my $st = $self->ireadstb();
+    if ( $st & 0x10 ) {    #MAV?
+      return ( $self->iread() );
+    }
+    if ( $st & 0x04 ) {    #Error queue?
+      return (undef);
+    }
+    usleep(500000);        #500ms
+  }
 }
 
 =over 4
@@ -864,13 +880,20 @@ my $onoffStateGeneric = sub {
   my $on         = shift;
   my $descriptor = $self->instrMethods->{$mname};
   my $subsys     = $descriptor->{scpi};
+  my $qsubsys    = $subsys;
+  if ( $subsys =~ /STATE/ ) {
+    $qsubsys =~ s/STATE/STATE?/;
+    $subsys .= ",";
+  } else {
+    $qsubsys = queryform($subsys);
+    $subsys .= " ";
+  }
   if ( !defined($on) ) {
-    $subsys =~ s/STATE/STATE?/;
-    my $state = $self->iquery($subsys);
+    my $state = $self->iquery($qsubsys);
     return ($state);
   }
   $on = ( $on != 0 ) ? 1 : 0;
-  $self->iwrite( "$subsys," . $on );
+  $self->iwrite( "$subsys" . $on );
 };
 
 #We get here is argtype != NONE
@@ -889,7 +912,7 @@ my $scalarSettingGeneric = sub {
   if ($queryonly) {
     UsageError->throw( { error => sprintf( "%s is a query only command", $mname ) } );
   }
-  $self->iwrite( "$subsys," . $val );
+  $self->iwrite( "$subsys " . $val );
 };
 my $commandGeneric = sub {
   my $self       = shift;

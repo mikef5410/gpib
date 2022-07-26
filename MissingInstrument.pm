@@ -24,5 +24,4 @@ sub AUTOLOAD {
   my $what   = $self->{What};
   cluck( sprintf( "%s\n%s is missing in call to %s.", scalar( localtime(time) ), $what, $called ) );
 }
-
 1;
