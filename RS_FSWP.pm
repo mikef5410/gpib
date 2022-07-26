@@ -24,8 +24,9 @@ use constant MODES => {
   DDEM      => "VSA"
 };
 with( 'GPIBWrap', 'Throwable' );    #Use Try::Tiny to catch my errors
-has 'InstrMode'      => ( is => 'rw', default => "PNOise", trigger => \&modeChange );
-has 'InstrIOChecked' => ( is => 'rw', default => 0,        trigger => \&instrIOChecking );
+has 'InstrMode' => ( is => 'rw', default => "PNOise", trigger => \&modeChange );
+
+#has 'InstrIOChecked' => ( is => 'rw', default => 0,        trigger => \&instrIOChecking );
 my $instrumentMethods = {
   calibrate      => { scpi => "*CAL",                   argtype => "NONE", queryonly => 1 },
   calResult      => { scpi => "CALibration:RESult",     argtype => "NONE", queryonly => 1 },
@@ -81,36 +82,34 @@ sub gotoLocal {
   }
 }
 
-sub instrIOChecking {
-  my $self = shift;
-  MooseX::MakeImmutable->open_up;
-  if ( $self->InstrIOChecked ) {
-    after [qw(iwrite)] => sub {
-      $self->instrErrs();
-    };
-  } else {
-    after [qw(iwrite)] => undef;
-  }
-  MooseX::MakeImmutable->lock_down;
-}
-
-sub instrErrs {
-  my $self = shift;
-  my $st   = $self->ireadstb();
-  if ( $st & 0x4 ) {
-    my $bt = Devel::StackTrace->new;
-    print STDERR "Last instrument IO had errors.\n";
-    print STDERR $bt->as_string;
-    my $err = 'x';
-    while ($err) {
-      $self->_iwrite(":SYST:ERR?");
-      $err = $self->iread();
-      last if ( $err =~ /^0,/ );    # error 0 means buffer is empty
-      printf( STDERR "$err\n" );
-    }
-  }
-}
-
+# sub instrIOChecking {
+#   my $self = shift;
+#   MooseX::MakeImmutable->open_up;
+#   if ( $self->InstrIOChecked ) {
+#     after [qw(iwrite)] => sub {
+#       $self->instrErrs();
+#     };
+#   } else {
+#     after [qw(iwrite)] => undef;
+#   }
+#   MooseX::MakeImmutable->lock_down;
+# }
+# sub instrErrs {
+#   my $self = shift;
+#   my $st   = $self->ireadstb();
+#   if ( $st & 0x4 ) {
+#     my $bt = Devel::StackTrace->new;
+#     print STDERR "Last instrument IO had errors.\n";
+#     print STDERR $bt->as_string;
+#     my $err = 'x';
+#     while ($err) {
+#       $self->_iwrite(":SYST:ERR?");
+#       $err = $self->iread();
+#       last if ( $err =~ /^0,/ );    # error 0 means buffer is empty
+#       printf( STDERR "$err\n" );
+#     }
+#   }
+# }
 sub modeChange {
   my $self    = shift;
   my $newMode = shift;

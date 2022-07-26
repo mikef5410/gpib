@@ -30,6 +30,7 @@ has 'defaultTimeout' => ( is => 'rw', default => 0 );             #sec
 has 'host'           => ( is => 'rw', default => '' );
 has 'logsubsys'      => ( is => 'rw', default => __PACKAGE__ );
 has 'instrMethods'   => ( is => 'rw', isa     => 'HashRef', default => sub { {} } );
+has 'InstrIOChecked' => ( is => 'rw', default => 0 );
 
 # This class wraps a variety of underlying GPIB mechanisms into a
 # common API
@@ -194,7 +195,25 @@ Send a string ($arg) to the instrument.
 sub iwrite {
   my $self = shift;
   my $arg  = shift;
-  return ( $self->_iwrite($arg) );
+  my $ret  = $self->_iwrite($arg);
+  if ( $self->InstrIOChecked ) {
+    usleep(500000);    #wait for the instrument to parse 500ms
+    if ( $self->EAV() ) {
+      my $bt = Devel::StackTrace->new;
+      printf( STDERR "iwrite \"%s\": instrument signaled error\n", $arg );
+      print STDERR $bt->as_string;
+      my $err = 'x';
+      while ($err) {
+        $self->_iwrite(":SYST:ERR?");
+        $err = $self->iread();
+        last if ( $err =~ /^0,/ );    # error 0 means buffer is empty
+        printf( STDERR "$err\n" );
+      }
+
+      #       UsageError->throw({error=>sprintf("iwrite \"%s\": IO error.",$arg)});
+    }
+  }
+  return ($ret);
 }
 
 sub _iwrite {
@@ -802,11 +821,13 @@ sub getErrors {
   my $self    = shift;
   my @errlist = ();
   my $res     = "";
-  while (1) {
-    $res = $self->iquery(":SYSTem:ERRor:NEXT?");
-    chomp($res);
-    last if ( $res =~ /0,/ );
-    push( @errlist, $res );
+  if ( $self->EAV() ) {
+    while (1) {
+      $res = $self->iquery(":SYSTem:ERRor:NEXT?");
+      chomp($res);
+      last if ( $res =~ /0,/ );
+      push( @errlist, $res );
+    }
   }
   return ( \@errlist );
 }
