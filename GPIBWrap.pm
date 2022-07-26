@@ -20,13 +20,13 @@ use constant 'OK'               => 0;
 use constant 'ERR'              => 1;
 ## no critic (BitwiseOperators)
 ## no critic (ValuesAndExpressions::ProhibitAccessOfPrivateData)
-with 'Throwable';    #Use Try::Tiny to catch my errors
+with 'Throwable';                                                 #Use Try::Tiny to catch my errors
 with 'MooseX::Log::Log4perl';
 has 'gpib'           => ( is => 'rw', default => undef );
 has 'bytes_read'     => ( is => 'ro', default => 0 );
 has 'reason'         => ( is => 'ro', default => 0 );
 has 'connectString'  => ( is => 'rw', default => '' );
-has 'defaultTimeout' => ( is => 'rw', default => 0 );
+has 'defaultTimeout' => ( is => 'rw', default => 0 );             #sec
 has 'host'           => ( is => 'rw', default => '' );
 has 'logsubsys'      => ( is => 'rw', default => __PACKAGE__ );
 has 'instrMethods'   => ( is => 'rw', isa     => 'HashRef', default => sub { {} } );
@@ -236,6 +236,23 @@ sub iread {
     $self->log( $self->logsubsys . ".IOTrace" )->info( sprintf("iread") ) if ( Log::Log4perl->initialized() );
     return ("");
   }
+
+  #Timeout by waiting for MAV bit
+  if ( $self->defaultTimeout ) {
+    my $slc = 10 * $self->defaultTimeout;
+    while ($slc) {
+      last if ( $self->MAV() );
+      usleep(100000);    # 100ms
+      $slc--;
+    }
+    if ( $slc <= 0 ) {
+
+      #Got here ... timed out
+      $self->log( $self->logsubsys . ".IOTrace" )->error( sprintf("iread: timeout") )
+        if ( Log::Log4perl->initialized() );
+      TimeoutError->throw( { error => "iread timeout" } );
+    }
+  }
 SWITCH: {
     if ( $self->gpib()->isa("VXI11::Client") ) {
       my $in = "";
@@ -273,18 +290,29 @@ Just an iwrite($arg) followed by an iread().
 sub iquery {
   my $self = shift;
   my $arg  = shift;
+  my $tmo  = $self->defaultTimeout;
   $self->log( $self->logsubsys . ".IOTrace" )->info( sprintf( "iquery %s", $arg ) ) if ( Log::Log4perl->initialized() );
   $self->iwrite($arg);
   my $loop = 1;
+  $loop = 10 * $tmo if ($tmo);
   while ($loop) {
     my $st = $self->ireadstb();
     if ( $st & 0x10 ) {    #MAV?
       return ( $self->iread() );
     }
-    if ( $st & 0x04 ) {    #Error queue?
+    if ( $st & 0x04 ) {    #EAV? Error queue ?
+      $self->log( $self->logsubsys . ".IOTrace" )->error( sprintf( "iquery %s: error detected.", $arg ) )
+        if ( Log::Log4perl->initialized() );
       return (undef);
     }
-    usleep(500000);        #500ms
+    usleep(100000);        #100ms
+    $loop-- if ($tmo);
+  }
+  if ( $tmo && ( $loop <= 0 ) ) {
+    $self->log( $self->logsubsys . ".IOTrace" )->error( sprintf( "iquery %s: timeout.", $arg ) )
+      if ( Log::Log4perl->initialized() );
+
+    #TimeoutError->throw({error=>"iquery timeout"});
   }
 }
 
@@ -828,6 +856,16 @@ sub stringBlockEncode {
   return ( sprintf( "#3%d%s", $len, $str ) );
 }
 
+sub EAV {
+  my $self = shift;
+  return ( $self->ireadstb() & 0x04 );
+}
+
+sub MAV {
+  my $self = shift;
+  return ( $self->ireadstb() & 0x10 );
+}
+
 sub trimwhite {
   my $in = shift;
   $in =~ s/^\s+//;
@@ -880,20 +918,17 @@ my $onoffStateGeneric = sub {
   my $on         = shift;
   my $descriptor = $self->instrMethods->{$mname};
   my $subsys     = $descriptor->{scpi};
-  my $qsubsys    = $subsys;
-  if ( $subsys =~ /STATE/ ) {
-    $qsubsys =~ s/STATE/STATE?/;
-    $subsys .= ",";
-  } else {
-    $qsubsys = queryform($subsys);
-    $subsys .= " ";
+  my $separator  = " ";
+  if ( $subsys =~ /\s+./ ) {    #A subsystem qualifier here?
+    $separator = ",";
   }
+  my $qsubsys = queryform($subsys);
   if ( !defined($on) ) {
     my $state = $self->iquery($qsubsys);
     return ($state);
   }
   $on = ( $on != 0 ) ? 1 : 0;
-  $self->iwrite( "$subsys" . $on );
+  $self->iwrite( $subsys . $separator . $on );
 };
 
 #We get here is argtype != NONE
@@ -905,6 +940,11 @@ my $scalarSettingGeneric = sub {
   my $descriptor = $self->instrMethods->{$mname};
   my $subsys     = $descriptor->{scpi};
   my $queryonly  = $descriptor->{queryonly} || 0;
+  my $separator  = " ";
+
+  if ( $subsys =~ /\s+./ ) {    #A subsystem qualifier here?
+    $separator = ",";
+  }
   if ( !defined($val) ) {
     $val = $self->iquery( queryform($subsys) );
     return ($val);
@@ -912,7 +952,7 @@ my $scalarSettingGeneric = sub {
   if ($queryonly) {
     UsageError->throw( { error => sprintf( "%s is a query only command", $mname ) } );
   }
-  $self->iwrite( "$subsys " . $val );
+  $self->iwrite( $subsys . $separator . $val );
 };
 my $commandGeneric = sub {
   my $self       = shift;
