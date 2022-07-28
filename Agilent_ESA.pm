@@ -118,5 +118,14 @@ sub getTRA {
   $traceDump->TSIZE( scalar(@rdg) );
   return ($traceDump);
 }
+
+sub coupleAll {
+   my $self = shift;
+
+   $self->iwrite(":COUPLE ALL");
+}
+
+
+
 __PACKAGE__->meta->make_immutable;
 1;

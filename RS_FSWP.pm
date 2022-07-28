@@ -120,6 +120,13 @@ sub modeChange {
     $self->{InstrMode} = "PNOise";
   }
   $self->iwrite(":INSTrument:SELect $newMode");
+  $self->iOPC(20);
+}
+
+sub coupleAll {
+   my $self = shift;
+
+   $self->iwrite(":INPUT:ATTenuation:AUTO 1;:SENSE:BANDWIDTH:VIDEO:AUTO 1;:SENSE:BANDWIDTH:RESOLUTION:AUTO 1;:SENSE:SWEEP:TIME:AUTO 1;");
 }
 
 #__PACKAGE__->meta->make_immutable;
