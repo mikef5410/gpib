@@ -5,9 +5,9 @@ package GPIBWrap;
 #use Moose;
 #use namespace::autoclean;
 use Moose::Role;
-use Time::HiRes     qw(sleep usleep gettimeofday tv_interval);
-use Time::Out       qw(timeout);
-use Carp            qw(cluck longmess shortmess);
+use Time::HiRes qw(sleep usleep gettimeofday tv_interval);
+use Time::Out qw(timeout);
+use Carp qw(cluck longmess shortmess);
 use Module::Runtime qw(use_module use_package_optimistically);
 use Exception::Class ( 'IOError', 'TransportError', 'TimeoutError', 'UsageError' );
 use Net::Telnet;    #For e2050Reset only

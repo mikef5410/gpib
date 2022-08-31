@@ -3,9 +3,9 @@
 package Agilent_86100;
 use Moose;
 use namespace::autoclean;
-use Time::HiRes     qw(sleep usleep gettimeofday tv_interval);
-use Time::Out       qw(timeout);
-use Carp            qw(cluck longmess shortmess);
+use Time::HiRes qw(sleep usleep gettimeofday tv_interval);
+use Time::Out qw(timeout);
+use Carp qw(cluck longmess shortmess);
 use Module::Runtime qw(use_module use_package_optimistically);
 use Exception::Class ( 'IOError', 'TransportError', 'TimeoutError' );
 ## no critic (ProhibitTwoArgOpen)

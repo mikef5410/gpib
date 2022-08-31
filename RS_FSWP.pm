@@ -124,9 +124,11 @@ sub modeChange {
 }
 
 sub coupleAll {
-   my $self = shift;
+  my $self = shift;
 
-   $self->iwrite(":INPUT:ATTenuation:AUTO 1;:SENSE:BANDWIDTH:VIDEO:AUTO 1;:SENSE:BANDWIDTH:RESOLUTION:AUTO 1;:SENSE:SWEEP:TIME:AUTO 1;");
+  $self->iwrite(
+":INPUT:ATTenuation:AUTO 1;:SENSE:BANDWIDTH:VIDEO:AUTO 1;:SENSE:BANDWIDTH:RESOLUTION:AUTO 1;:SENSE:SWEEP:TIME:AUTO 1;"
+  );
 }
 
 #__PACKAGE__->meta->make_immutable;

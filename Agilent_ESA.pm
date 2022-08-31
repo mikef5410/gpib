@@ -120,12 +120,10 @@ sub getTRA {
 }
 
 sub coupleAll {
-   my $self = shift;
+  my $self = shift;
 
-   $self->iwrite(":COUPLE ALL");
+  $self->iwrite(":COUPLE ALL");
 }
-
-
 
 __PACKAGE__->meta->make_immutable;
 1;

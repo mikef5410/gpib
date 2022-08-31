@@ -13,7 +13,7 @@ sub init {
   while ($err) {
     $self->iwrite(":SYST:ERR?");
     $err = $self->iread( 100, 1000 );
-    last if ( $err =~ /\+?0,/ );                     # error 0 means buffer is empty
+    last if ( $err =~ /\+?0,/ );                   # error 0 means buffer is empty
   }
   $self->iwrite("*CLS");
   #
