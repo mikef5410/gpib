@@ -296,6 +296,38 @@ SWITCH: {
   }
 }
 
+sub _iread {
+  my $self = shift;
+  return if ( !defined($self) );
+  if ( !defined( $self->gpib ) ) {
+    $self->log( $self->logsubsys . ".IOTrace" )->info( sprintf("iread") ) if ( Log::Log4perl->initialized() );
+    return ("");
+  }
+SWITCH: {
+    if ( $self->gpib()->isa("VXI11::Client") ) {
+      my $in = "";
+      do {
+        ( $self->{bytes_read}, my $xin, $self->{reason} ) = $self->gpib()->vxi_read(@_);
+        $in .= $xin;
+      } while ( ( $self->{reason} & ( TERM_CHR | TERM_END ) ) == 0 );
+      $self->{bytes_read} = length($in);
+      $self->log( $self->logsubsys . ".IOTrace" )->info( sprintf( "iread -> %s", $in ) )
+        if ( Log::Log4perl->initialized() );
+      return ($in);
+      last(SWITCH);
+    }
+    if ( $self->gpib()->isa("RPCINST") ) {
+      my $in = $self->gpib()->iread(@_);
+      $self->log( $self->logsubsys . ".IOTrace" )->info( sprintf( "iread -> %s", $in ) )
+        if ( Log::Log4perl->initialized() );
+      return ($in);
+      last(SWITCH);
+    }
+    TransportError->throw( { error => 'Unknown GPIB transport' } );
+  }
+
+}
+
 =over 4
 
 =item B<< $instrument->iquery($arg) >>
@@ -311,20 +343,21 @@ sub iquery {
   my $arg  = shift;
   my $tmo  = $self->defaultTimeout;
   $self->log( $self->logsubsys . ".IOTrace" )->info( sprintf( "iquery %s", $arg ) ) if ( Log::Log4perl->initialized() );
+
   $self->iwrite($arg);
   my $loop = 1;
   $loop = 10 * $tmo if ($tmo);
   while ($loop) {
     my $st = $self->ireadstb();
-    if ( $st & 0x10 ) {    #MAV?
+    if ( $self->MAV($st) ) {    #MAV?
       return ( $self->iread() );
     }
-    if ( $st & 0x04 ) {    #EAV? Error queue ?
+    if ( $self->EAV($st) ) {    #EAV? Error queue ?
       $self->log( $self->logsubsys . ".IOTrace" )->error( sprintf( "iquery %s: error detected.", $arg ) )
         if ( Log::Log4perl->initialized() );
       return (undef);
     }
-    usleep(100000);        #100ms
+    usleep(100000);             #100ms
     $loop-- if ($tmo);
   }
   if ( $tmo && ( $loop <= 0 ) ) {
@@ -877,14 +910,24 @@ sub stringBlockEncode {
   return ( sprintf( "#3%d%s", $len, $str ) );
 }
 
+#
+# Common status byte bits. These might need to be overloaded in the instrument specific
+# module if error reporting is different.
+#
 sub EAV {
   my $self = shift;
-  return ( $self->ireadstb() & 0x04 );
+  my $stb  = shift || undef;
+
+  $stb = $self->ireadstb() if ( !defined($stb) );
+  return ( $stb & 0x04 );
 }
 
 sub MAV {
   my $self = shift;
-  return ( $self->ireadstb() & 0x10 );
+  my $stb  = shift || undef;
+
+  $stb = $self->ireadstb() if ( !defined($stb) );
+  return ( $stb & 0x10 );
 }
 
 sub trimwhite {
