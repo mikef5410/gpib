@@ -152,7 +152,7 @@ sub NRZjitterSetup {
   #Calculate number of acq points.
   my $loopTime = 5 / $self->cdr_bw;
   my $srate    = $self->iquery(":ACQUire:SRATE?");
-  my $npoints  = 2 * $srate * $loopTime;
+  my $npoints  = 2.10 * $srate * $loopTime;
 
   if ( !defined($patt) ) {
     UsageError->throw( { error => sprintf( "Unknown pattern: %s.", $patt ) } );
@@ -165,7 +165,7 @@ sub NRZjitterSetup {
 
   $self->iwrite(
     sprintf( ":MEASure:THResholds:METHod CHANnel%d,HYST;:MEASure:THResholds:GENAUTO CHANnel%d", $chan, $chan ) );
-  $self->iwrite( sprintf( ":MTEST:FOLDing ON,CHANnel%d", $chan ) );          #real-time eye
+  $self->realtimeEye(1);
   $self->iwrite(":MEASure:RJDJ:METHod BOTH");
   $self->iwrite(":MEASure:RJDJ:PLENGth ARBitrary,-2,5");
   $self->iwrite(":MEASure:RJDJ:EDGE BOTH");
@@ -201,12 +201,24 @@ sub NRZmeasureJitter {
   $results{ber}       = $self->iquery(":MEASURE:RJDJ:BER?");
 
   my $ix = 1;
-  foreach my $name ( "TJ", "RJ", "DJ", "PJ", "BUJ", "DDJ", "DCD", "ISI", "transitions", "scopeRJ", "DDPWS", "ABUJ" ) {
-    $results{$name} = @res[ $ix++ ];
-    $results{ $name . "_state" } = @res[ $ix++ ];
+  foreach my $name ( "TJ", "RJrms", "DJdd", "PJrms", "BUJdd", "DDJpp", "DCD", "ISIpp", "transitions",
+    "scopeRJ", "DDPWS", "ABUJrms" )
+  {
+    $results{$name} = $res[ $ix++ ];
+    $results{ $name . "_state" } = $res[ $ix++ ];
     $ix++;
   }
   return ( \%results );
+}
+
+sub realtimeEye {
+  my $self = shift;
+  my $on   = shift;
+
+  my $chan = $self->inputPos;
+  $on = ( $on != 0 );
+  my $onoff = $on ? "ON" : "OFF";
+  $self->iwrite( sprintf( ":MTEST:FOLDing %s,CHANnel%d", $onoff, $chan ) );    #real-time eye
 }
 
 #__PACKAGE__->meta->make_immutable;
