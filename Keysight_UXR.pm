@@ -17,14 +17,19 @@ use Exception::Class ( 'IOError', 'TransportError', 'TimeoutError', 'UsageError'
 with( 'GPIBWrap', 'Throwable', 'CDR' );    #Use Try::Tiny to catch my errors
 
 # CDR JTF settings
-has 'cdr_loop'       => ( is => 'rw', default => 'SOPLL' );
-has 'data_rate'      => ( is => 'rw', default => 9.95328e9 );
-has 'cdr_bw'         => ( is => 'rw', default => 4e6 );         #Hz
-has 'cdr_peaking'    => ( is => 'rw', default => 2.08 );        #dB
-has 'cdr_multiplier' => ( is => 'rw', default => 1.0 );
-has 'inputPos'       => ( is => 'rw', default => 1 );
-has 'inputNeg'       => ( is => 'rw', default => 2 );
-has 'useDiff'        => ( is => 'rw', default => 1 );
+has 'cdr_loop'         => ( is => 'rw', default => 'SOPLL' );
+has 'data_rate'        => ( is => 'rw', default => 9.95328e9 ); #Hz
+has 'cdr_bw'           => ( is => 'rw', default => 4e6 );               #Hz
+has 'cdr_peaking'      => ( is => 'rw', default => 0.707 );             #dB
+has 'cdr_multiplier'   => ( is => 'rw', default => 1.0 );
+has 'inputPos'         => ( is => 'rw', default => 1 );
+has 'inputNeg'         => ( is => 'rw', default => 2 );
+has 'useDiff'          => ( is => 'rw', default => 1 );
+has 'specifiedRJ'      => ( is => 'rw', default => sub { undef; } );    #Leave these undef to disable
+has 'scopeRJ'          => ( is => 'rw', default => sub { undef; } );
+has 'TIEfilterLimits'  => ( is => 'rw', default => sub { undef; } );    #Ref to array of Lower,Upper
+has 'TIEfilterShape'   => ( is => 'rw', default => "RECTangular" );
+has 'TIEfilterDamping' => ( is => 'rw', default => 0.707 );
 
 my $instrumentMethods = {
   calibrate => { scpi => "*CAL",       argtype => "NONE", queryonly => 1 },
@@ -157,6 +162,9 @@ sub NRZjitterSetup {
   if ( !defined($patt) ) {
     UsageError->throw( { error => sprintf( "Unknown pattern: %s.", $patt ) } );
   }
+
+  my $filterLim = $self->TIEfilterLimits;
+
   $self->iwrite( sprintf( ":ANALyze:SIGNal:TYPE CHANNEL%d,NRZ",                       $chan ) );
   $self->iwrite( sprintf( ":ANALyze:SIGNal:PATTern:PLENgth CHANNEL%d,%s",             $chan, $patt ) );
   $self->iwrite( sprintf( ":DISPLAY:CGRade:SCHeme TEMP;:DISPLAY:CGRade ON,CHANnel%d", $chan ) );
@@ -165,12 +173,35 @@ sub NRZjitterSetup {
 
   $self->iwrite(
     sprintf( ":MEASure:THResholds:METHod CHANnel%d,HYST;:MEASure:THResholds:GENAUTO CHANnel%d", $chan, $chan ) );
-  $self->realtimeEye(1);
+  $self->realtimeEye(0);
   $self->iwrite(":MEASure:RJDJ:METHod BOTH");
   $self->iwrite(":MEASure:RJDJ:PLENGth ARBitrary,-2,5");
   $self->iwrite(":MEASure:RJDJ:EDGE BOTH");
   $self->iwrite(":MEASure:RJDJ:UNITs SECond");
   $self->iwrite(":MEASure:RJDJ:BER E12");                                    #measure jitter at 1E-12
+
+  if ( defined($filterLim) && scalar(@$filterLim) == 2 ) {
+    $self->iwrite( sprintf( ":MEASure:TIEFilter:SHAPe %s", $self->TIEfilterShape ) );
+    $self->iwrite( sprintf( ":MEASure:TIEFilter:STARt %g", $filterLim->[0] ) );
+    $self->iwrite( sprintf( ":MEASure:TIEFilter:STOP %g",  $filterLim->[1] ) );
+    $self->iwrite(":MEASure:TIEFilter:TYPE BANDpass");
+    $self->iwrite(":MEASure:TIEFilter:STATe ON");
+  } else {
+    $self->iwrite(":MEASure:TIEFilter:STATe OFF");
+  }
+
+  if ( defined( $self->scopeRJ ) ) {
+    $self->iwrite( sprintf( ":MEASure:RJDJ:SCOPe:RJ ON,%g", $self->scopeRJ ) );
+  } else {
+    $self->iwrite(":MEASure:RJDJ:SCOPe:RJ AUTO");
+  }
+
+  if ( defined( $self->specifiedRJ ) ) {
+    $self->iwrite( sprintf( ":MEASure:RJDJ:RJ ON,%g", $self->specifiedRJ ) );
+  } else {
+    $self->iwrite(":MEASure:RJDJ:RJ OFF");
+  }
+
   $self->iwrite( sprintf( ":MEASure:RJDJ:SOURce CHANnel%d", $chan ) );
 }
 
@@ -182,31 +213,39 @@ sub NRZmeasureJitter {
   $self->iwrite(":MEASure:RJDJ:STATe ON");
   my $tstart = time;
   $self->run();
-  my $wc;
+  my $wc = 1;
   while (1) {
     my $jits        = $self->iquery(":MEASURE:RJDJ:TJRJDJ?");
     my @jit_results = split( ",", $jits );
+
+    #printf("%g %g %g\n",$jit_results[2],$jit_results[5],$jit_results[8]);
     last if ( $jit_results[2] < 3 && $jit_results[5] < 3 && $jit_results[8] < 3 );
     sleep(5);
   }
   $self->stop();
   my $runtime = time - $tstart;
-  $wc = $self->iquery(":MTESt:FOLDing:COUNt:WAVEFORMS?");
+  my $hassist = $self->iquery(":MTEST:FOLDing?");
+  $wc = $self->iquery(":MTESt:FOLDing:COUNt:WAVEFORMS?") if ($hassist);
 
-  my $jit     = $self->iquery(":MEASure:RJDJ:ALL?");
+  my $jit = $self->iquery(":MEASure:RJDJ:ALL?");
+  print "$jit\n";
   my %results = ();
   my @res     = split( ",", $jit );
-  $results{waveforms} = $wc;
-  $results{time}      = $runtime;
-  $results{ber}       = $self->iquery(":MEASURE:RJDJ:BER?");
+  $results{waveforms}        = $wc;
+  $results{time}             = $runtime;
+  $results{ber}              = $self->iquery(":MEASURE:RJDJ:BER?");
+  $results{TIELimits}        = $self->TIEfilterLimits;
+  $results{TIEShape}         = $self->TIEfilterShape;
+  $results{TIEfilterDamping} = $self->TIEfilterDamping;
+  $results{specifiedRJ}      = $self->specifiedRJ;
+  $results{scopeRJ}          = $self->scopeRJ;
 
-  my $ix = 1;
-  foreach my $name ( "TJ", "RJrms", "DJdd", "PJrms", "BUJdd", "DDJpp", "DCD", "ISIpp", "transitions",
-    "scopeRJ", "DDPWS", "ABUJrms" )
-  {
-    $results{$name} = $res[ $ix++ ];
-    $results{ $name . "_state" } = $res[ $ix++ ];
-    $ix++;
+  for ( my $j = 0 ; $j < scalar(@res) ; $j++ ) {
+    my $name = $res[ $j++ ];
+    $name =~ s/\(.*\)//;
+    $name =~ s/\s+/_/g;
+    $results{$name} = $res[ $j++ ];
+    $results{ $name . "_state" } = $res[$j];
   }
   return ( \%results );
 }

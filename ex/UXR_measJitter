@@ -1,0 +1,56 @@
+#!/usr/bin/perl
+#
+use strict;
+use warnings;
+## no critic (ValuesAndExpressions::ProhibitAccessOfPrivateData)
+## no critic (ProhibitThreeArgumentOpen)
+## no critic (ProhibitTwoArgOpen)
+## no critic (InputOutput::ProhibitBarewordFileHandles)
+## no critic (RequireLexicalLoopIterators)
+## no critic (ProhibitStringyEval)
+#Where to find our library and auxiliary code.
+use lib "..";
+
+#use lib $ENV{BCOM_PERL} || "/projects/Bcom-perl";
+use lib $ENV{PERL_GPIB} || "/projects/gpib";
+use Enbugger;
+use Log::Log4perl qw(:easy);
+use Agilent_86100;
+use Keysight_UXR;
+use Generic_Instrument;
+use Data::Dumper qw(Dumper);
+
+Log::Log4perl->easy_init($ERROR);
+my $uxr = Keysight_UXR->new( connectString => "VXI11::uxr25::inst0" );
+
+print $uxr->iquery("*IDN?"), "\n";
+$uxr->InstrIOChecked(1);
+$uxr->Reset();
+$uxr->ExtReference(1);
+$uxr->init();
+$uxr->iwrite(":CHANNEL2:DISPLAY OFF");
+$uxr->autoscale;
+$uxr->iOPC(20);
+
+my $cdr = $uxr;
+$cdr->cdrRate(1.24416e9);
+$cdr->cdrLoopBW(20e3);
+### Set these to undef to disable
+$uxr->scopeRJ(150e-15);
+
+#$uxr->specifiedRJ(700e-15);
+#$uxr->TIEfilterLimits([20e3,20e6]);
+###
+$cdr->cdr_loop("SOPLL");
+$cdr->cdr_peaking(0.707);
+
+$uxr->NRZjitterSetup("PRBS15");
+$uxr->iwrite(":DISPLAY:CLIPPED OFF");
+$uxr->iwrite(
+  ":DISPLAY:RESULTS:LAYOUT TAB;:DISPLAY:PROPORTION:RESULTS 40;:DISPLAY:CGRade:LEGend OFF;:DISPLAY:PROPORTION AREA1,60");
+my $res = $uxr->NRZmeasureJitter();
+print Dumper($res);
+
+$uxr->iwrite(":MEASure:RJDJ:STATe OFF");
+$uxr->run();
+exit;
