@@ -18,7 +18,7 @@ with( 'GPIBWrap', 'Throwable', 'CDR' );    #Use Try::Tiny to catch my errors
 
 # CDR JTF settings
 has 'cdr_loop'         => ( is => 'rw', default => 'SOPLL' );
-has 'data_rate'        => ( is => 'rw', default => 9.95328e9 ); #Hz
+has 'data_rate'        => ( is => 'rw', default => 9.95328e9 );         #Hz
 has 'cdr_bw'           => ( is => 'rw', default => 4e6 );               #Hz
 has 'cdr_peaking'      => ( is => 'rw', default => 0.707 );             #dB
 has 'cdr_multiplier'   => ( is => 'rw', default => 1.0 );

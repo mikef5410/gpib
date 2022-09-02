@@ -25,6 +25,7 @@ use constant MODES => {
 };
 with( 'GPIBWrap', 'Throwable' );    #Use Try::Tiny to catch my errors
 has 'InstrMode' => ( is => 'rw', default => "PNOise", trigger => \&modeChange );
+has 'JitterIntegrationLimits' => ( is => 'rw', default => sub { [ 20e3, 80e6 ] } );
 
 #has 'InstrIOChecked' => ( is => 'rw', default => 0,        trigger => \&instrIOChecking );
 my $instrumentMethods = {
@@ -114,7 +115,8 @@ sub modeChange {
   my $self    = shift;
   my $newMode = shift;
   my $oldMode = shift;
-  return if ( $newMode eq $oldMode );
+
+  return if ( defined($oldMode) && ( $newMode eq $oldMode ) );
   if ( !defined( MODES->{$newMode} ) ) {
     $newMode = "PNOise";
     $self->{InstrMode} = "PNOise";
@@ -126,9 +128,60 @@ sub modeChange {
 sub coupleAll {
   my $self = shift;
 
-  $self->iwrite(
+  if ( $self->{InstrMode} eq 'SANalyzer' ) {
+    $self->iwrite(
 ":INPUT:ATTenuation:AUTO 1;:SENSE:BANDWIDTH:VIDEO:AUTO 1;:SENSE:BANDWIDTH:RESOLUTION:AUTO 1;:SENSE:SWEEP:TIME:AUTO 1;"
+    );
+  }
+
+  if ( $self->{InstrMode} eq 'PNOise' ) {
+    $self->iwrite(":INPUT1:ATTenuation:AUTO ON");
+
+    #$self->iwrite(":BANDWIDTH:VIDEO:AUTO ON");
+  }
+}
+
+sub JitterSetup {
+  my $self = shift;
+
+  $self->modeChange("PNOise");
+  $self->iwrite("INIT:CONT OFF");
+  $self->iwrite(
+    sprintf(
+      ":SENSE:FREQ:STARt %g;:SENSE:FREQ:STOP %g",
+      $self->JitterIntegrationLimits->[0],
+      $self->JitterIntegrationLimits->[1]
+    )
   );
+  $self->iwrite("INIT:IMMEDIATE");
+  $self->coupleAll();
+  $self->iwrite(":DISPlay:WINDow1:TRACE1:MODE AVERAGE");
+  $self->iwrite(":SENSE:SWEEP:COUNT 16");    #Average 16 sweeps
+  $self->iwrite(":SENSE:SWEEP:XFACTOR 128;:SENSE:SWEEP:XOPTIMIZE 1");
+  $self->iwrite(":CALC:RANGE1:EVAL OFF");
+  $self->iwrite(
+    sprintf(
+      ":CALC:RANGE1:EVAL:START %g;:CALC:RANGE1:EVAL:STOP %g",
+      $self->JitterIntegrationLimits->[0],
+      $self->JitterIntegrationLimits->[1]
+    )
+  );
+  $self->iwrite(":CALC:RANGE1:EVAL:TRACE TRACE1");
+
+  #$self->iwrite(":CALCULATE:RANGE1:EVAL:WEIGHTING 'NONE'");
+}
+
+sub JitterMeasure {
+  my $self = shift;
+
+  $self->iwrite("INIT:CONT ON");
+  $self->iwrite(":SENSE:ADJUST:CONFIGURE:FREQUENCY:AUTOSEARCH 1");
+  $self->iOPC(5);
+  $self->iwrite("INIT:CONT OFF");
+  $self->iwrite("INIT:IMMEDIATE");    #sleep(10);
+  $self->iOPC(20);
+  my $jitrms = $self->iquery(":FETCH:RANGE1:PNOISE1:RMS?");
+  return ($jitrms);
 }
 
 #__PACKAGE__->meta->make_immutable;

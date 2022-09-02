@@ -1,0 +1,36 @@
+#!/usr/bin/perl
+#
+use strict;
+use warnings;
+## no critic (ValuesAndExpressions::ProhibitAccessOfPrivateData)
+## no critic (ProhibitThreeArgumentOpen)
+## no critic (ProhibitTwoArgOpen)
+## no critic (InputOutput::ProhibitBarewordFileHandles)
+## no critic (RequireLexicalLoopIterators)
+## no critic (ProhibitStringyEval)
+#Where to find our library and auxiliary code.
+use lib "..";
+
+#use lib $ENV{BCOM_PERL} || "/projects/Bcom-perl";
+use lib $ENV{PERL_GPIB} || "/projects/gpib";
+use Enbugger;
+use Log::Log4perl qw(:easy);
+use RS_FSWP;
+use Generic_Instrument;
+use Data::Dumper qw(Dumper);
+
+Log::Log4perl->easy_init($ERROR);
+my $pna = RS_FSWP->new( connectString => "VXI11::fswp50-serdes25::inst0" );
+
+print $pna->iquery("*IDN?"), "\n";
+$pna->InstrIOChecked(1);
+$pna->init();
+$pna->externalReference(1);
+
+$pna->JitterIntegrationLimits( [ 25e3, 70e6 ] );
+$pna->JitterSetup();
+my $jit = $pna->JitterMeasure();
+
+printf( "Jitter %g\n", $jit );
+
+exit;
