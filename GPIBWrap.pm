@@ -5,6 +5,7 @@ package GPIBWrap;
 #use Moose;
 #use namespace::autoclean;
 use Moose::Role;
+use MooseX::MakeImmutable;
 use Time::HiRes qw(sleep usleep gettimeofday tv_interval);
 use Time::Out qw(timeout);
 use Carp qw(cluck longmess shortmess);
@@ -328,6 +329,15 @@ SWITCH: {
 
 }
 
+
+sub _iquery {
+   my $self = shift;
+   my $arg = shift;
+
+   $self->_iwrite($arg);
+   return($self->_iread());
+}
+
 =over 4
 
 =item B<< $instrument->iquery($arg) >>
@@ -350,7 +360,7 @@ sub iquery {
   while ($loop) {
     my $st = $self->ireadstb();
     if ( $self->MAV($st) ) {    #MAV?
-      return ( $self->iread() );
+      return ( $self->_iread() );
     }
     if ( $self->EAV($st) ) {    #EAV? Error queue ?
       $self->log( $self->logsubsys . ".IOTrace" )->error( sprintf( "iquery %s: error detected.", $arg ) )
@@ -394,9 +404,9 @@ sub iOPC {
   $self->log( $self->logsubsys . ".IOTrace" )->info( sprintf( "iOPC %g", $timeout ) )
     if ( Log::Log4perl->initialized() );
   return if ( !defined( $self->gpib ) );
-  $self->iwrite("*ESE 255");                       #Propagate OPC up to STB
-  $self->iwrite("*CLS");
-  $self->iwrite("*OPC");                           #Tell the instrument we're interested in OPC
+  $self->_iwrite("*ESE 255");                       #Propagate OPC up to STB
+  $self->_iwrite("*CLS");
+  $self->_iwrite("*OPC");                           #Tell the instrument we're interested in OPC
   my $tstart = [gettimeofday];
 
   #Poll STB for ESB bit, then read ESR for OPC
@@ -405,7 +415,7 @@ sub iOPC {
     while ( tv_interval($tstart) <= $timeout ) {
       my $stb = $self->ireadstb();
       if ( $stb & ( 1 << 5 ) ) {    #Event status bit set?
-        my $esr = $self->iquery("*ESR?") || 0;    #Read ESR
+        my $esr = $self->_iquery("*ESR?") || 0;    #Read ESR
         if ( $esr & 0x1 ) {                       #OPC set?
           return (1);
         }
@@ -431,7 +441,7 @@ sub iOPC {
   #No timeout case ...
   my $lc = 0;
   while (1) {
-    $ret = $self->iquery("*ESR?") || 0;
+    $ret = $self->_iquery("*ESR?") || 0;
     if ( $ret & (0x1) ) {
       return (1);
     }
@@ -1041,6 +1051,7 @@ sub populateAccessors {
   my $args = shift;
   my $meta = $self->meta;
   $self->logsubsys($self);
+  MooseX::MakeImmutable->open_up;
   foreach my $methodName ( keys( %{ $self->instrMethods } ) ) {
 
     #printf("populate %s in %s\n",$methodName,$self);
@@ -1076,5 +1087,6 @@ sub populateAccessors {
   }
 
   #$meta->make_immutable;
+  MooseX::MakeImmutable->lock_down;
 }
 1;
