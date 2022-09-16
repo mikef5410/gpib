@@ -52,8 +52,8 @@ sub init {
   $self->instrMethods($instrumentMethods);
   $self->populateAccessors();
 
-  my @errs=$self->getErrors();
-  
+  my @errs = $self->getErrors();
+
   $self->iwrite(":SYSTEM:HEADER OFF;");
   $self->iwrite(":ACQuire:BANDwidth MAX");
   $self->iwrite( sprintf( ":CHANnel%d:DISPLAY ON", $self->inputPos ) );

@@ -29,26 +29,33 @@ has 'JitterIntegrationLimits' => ( is => 'rw', default => sub { [ 20e3, 80e6 ] }
 
 #has 'InstrIOChecked' => ( is => 'rw', default => 0,        trigger => \&instrIOChecking );
 my $instrumentMethods = {
-  calibrate      => { scpi => "*CAL",                   argtype => "NONE", queryonly => 1 },
-  calResult      => { scpi => "CALibration:RESult",     argtype => "NONE", queryonly => 1 },
-  displayUpdates => { scpi => ":SYSTem:DISPlay:UPDate", argtype => "BOOLEAN" },
+  calibrate      => { scpi => "*CAL",                          argtype => "NONE", queryonly => 1 },
+  calResult      => { scpi => "CALibration:RESult",            argtype => "NONE", queryonly => 1 },
+  displayUpdates => { scpi => ":SYSTem:DISPlay:UPDate",        argtype => "BOOLEAN" },
+  trace1State    => { scpi => ":DISPLay:WINDow1:TRACe1:STATe", argtype => "BOOLEAN" },
+  trace2State    => { scpi => ":DISPLay:WINDow1:TRACe2:STATe", argtype => "BOOLEAN" },
+  trace3State    => { scpi => ":DISPLay:WINDow1:TRACe3:STATe", argtype => "BOOLEAN" },
+  trace4State    => { scpi => ":DISPLay:WINDow1:TRACe4:STATe", argtype => "BOOLEAN" },
+  trace5State    => { scpi => ":DISPLay:WINDow1:TRACe5:STATe", argtype => "BOOLEAN" },
+  trace6State    => { scpi => ":DISPLay:WINDow1:TRACe6:STATe", argtype => "BOOLEAN" },
 };
 
 sub init {
   my $self = shift;
   $self->instrMethods($instrumentMethods);
   $self->populateAccessors();
+  my @errs = $self->getErrors();
   return 0              if ( $self->{VIRTUAL} );
   $self->iwrite("*RST") if ( $self->{RESET} );     #Get us to default state
-  my $err = 'x';               # seed for first iteration
-                               # clear any accumulated errors
-                               #while ($err) {
-                               #  $self->iwrite(":SYST:ERR?");
-                               #  $err = $self->iread( 100, 1000 );
-                               #  last if ( $err =~ /\+0/ );                     # error 0 means buffer is empty
-                               #}
-  $self->displayUpdates(1);    #A little slower
-                               #$self->instrErrs();
+  my $err = 'x';                                   # seed for first iteration
+                                                   # clear any accumulated errors
+                                                   #while ($err) {
+                                                   #  $self->iwrite(":SYST:ERR?");
+                                                   #  $err = $self->iread( 100, 1000 );
+                                                   #  last if ( $err =~ /\+0/ );  # error 0 means buffer is empty
+                                                   #}
+  $self->displayUpdates(1);                        #A little slower
+                                                   #$self->instrErrs();
   $self->iwrite(":SYSTem:ERRor:CLEar:ALL");
   $self->iwrite("*CLS");
   #
@@ -156,6 +163,14 @@ sub JitterSetup {
   $self->iwrite("INIT:IMMEDIATE");
   $self->coupleAll();
   $self->iwrite(":DISPlay:WINDow1:TRACE1:MODE AVERAGE");
+  $self->iwrite(":DISPLay:WINDow1:TRACE2:MODE WRITe");
+  $self->trace1State(1);
+  $self->trace1State(1);
+  $self->trace2State(1);
+  $self->trace3State(0);
+  $self->trace4State(0);
+  $self->trace5State(0);
+  $self->trace6State(0);
   $self->iwrite(":SENSE:SWEEP:COUNT 16");    #Average 16 sweeps
   $self->iwrite(":SENSE:SWEEP:XFACTOR 128;:SENSE:SWEEP:XOPTIMIZE 1");
   $self->iwrite(":CALC:RANGE1:EVAL OFF");
@@ -171,6 +186,8 @@ sub JitterSetup {
   #$self->iwrite(":CALCULATE:RANGE1:EVAL:WEIGHTING 'NONE'");
 }
 
+# Return RMS jitter over RANGE1
+#
 sub JitterMeasure {
   my $self = shift;
 
@@ -182,6 +199,55 @@ sub JitterMeasure {
   $self->iOPC(20);
   my $jitrms = $self->iquery(":FETCH:RANGE1:PNOISE1:RMS?");
   return ($jitrms);
+}
+
+#Return Spur dBc amplitudes and jitters in the form:
+# (freq,value,freq,value,...) Also return carrier amplitude.
+sub SpurList {
+  my $self = shift;
+
+  my %res = ();
+  $self->iwrite("INIT:CONT ON");
+  $self->iwrite(":SENSE:ADJUST:CONFIGURE:FREQUENCY:AUTOSEARCH 1");
+  $self->iOPC(5);
+  $self->iwrite("INIT:CONT OFF");
+  $self->iwrite("INIT:IMMEDIATE");                                     #sleep(10);
+  $self->iOPC(20);
+  $res{DJrms_wc} = $self->iquery(":FETCh:PNOise2:SPURs:DISCrete?");    #Worst case RMS sum of DJ
+  my $spurlist    = $self->iquery(":FETCh:PNOise2:SPURs?");
+  my $spurJitlist = $self->iquery(":FETCh:PNOise2:SPURs:Jitter?");
+  my @spurs       = split( ",", $spurlist );
+  my @jits        = split( ",", $spurJitlist );
+  $res{Spurs}        = \@spurs;
+  $res{SpurJits}     = \@jits;
+  $res{CarrierLevel} = $self->iquery(":SENSe:POWer:RLEVel?");
+  return ( \%res );
+}
+
+#Return three traces .. ClearWrite, Avg, and XGindicator. Each in the form
+# (freq,ampl,freq,ampl...)
+sub GetPnoiseTrace {
+  my $self = shift;
+
+  my %res = ();
+  $self->iwrite("INIT:CONT ON");
+  $self->iwrite(":SENSE:ADJUST:CONFIGURE:FREQUENCY:AUTOSEARCH 1");
+  $self->iOPC(5);
+  $self->iwrite("INIT:CONT OFF");
+  $self->iwrite("INIT:IMMEDIATE");    #sleep(10);
+  $self->iOPC(20);
+
+  my $points      = $self->iquery(":TRACe1:DATA? TRACE2");
+  my $avgPoints   = $self->iquery(":TRACe1:DATA? TRACE1");
+  my $xgindicator = $self->iquery(":TRACe1:DATA? XGINdicator");
+
+  my @pts = split( ",", $points );
+  $res{Points} = \@pts;
+  my @avgPts = split( ",", $avgPoints );
+  $res{AvgPoints} = \@avgPts;
+  my @indPts = split( ",", $xgindicator );
+  $res{XGIndicator} = \@indPts;
+  return ( \%res );
 }
 
 #__PACKAGE__->meta->make_immutable;

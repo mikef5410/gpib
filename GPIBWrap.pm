@@ -329,13 +329,12 @@ SWITCH: {
 
 }
 
-
 sub _iquery {
-   my $self = shift;
-   my $arg = shift;
+  my $self = shift;
+  my $arg  = shift;
 
-   $self->_iwrite($arg);
-   return($self->_iread());
+  $self->_iwrite($arg);
+  return ( $self->_iread() );
 }
 
 =over 4
@@ -404,9 +403,9 @@ sub iOPC {
   $self->log( $self->logsubsys . ".IOTrace" )->info( sprintf( "iOPC %g", $timeout ) )
     if ( Log::Log4perl->initialized() );
   return if ( !defined( $self->gpib ) );
-  $self->_iwrite("*ESE 255");                       #Propagate OPC up to STB
+  $self->_iwrite("*ESE 255");                      #Propagate OPC up to STB
   $self->_iwrite("*CLS");
-  $self->_iwrite("*OPC");                           #Tell the instrument we're interested in OPC
+  $self->_iwrite("*OPC");                          #Tell the instrument we're interested in OPC
   my $tstart = [gettimeofday];
 
   #Poll STB for ESB bit, then read ESR for OPC
@@ -416,10 +415,10 @@ sub iOPC {
       my $stb = $self->ireadstb();
       if ( $stb & ( 1 << 5 ) ) {    #Event status bit set?
         my $esr = $self->_iquery("*ESR?") || 0;    #Read ESR
-        if ( $esr & 0x1 ) {                       #OPC set?
+        if ( $esr & 0x1 ) {                        #OPC set?
           return (1);
         }
-        usleep(500000);                           # 500ms sleep
+        usleep(500000);                            # 500ms sleep
       }
       my $sleepTime = $timeout - tv_interval($tstart);
       if ( $sleepTime <= 0 ) {

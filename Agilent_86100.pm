@@ -24,9 +24,9 @@ with( 'GPIBWrap', 'Throwable', 'CDR' );    #Use Try::Tiny to catch my errors
 # Reset: Send the *RST command
 ################################################################################
 sub init {
-   my $self = shift;
-   my @errs = $self->getErrors();
-   $self->cdrInit();
+  my $self = shift;
+  my @errs = $self->getErrors();
+  $self->cdrInit();
 }
 
 sub Reset() {
