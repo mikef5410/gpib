@@ -210,6 +210,7 @@ sub SpurList {
   $self->iwrite("INIT:CONT ON");
   $self->iwrite(":SENSE:ADJUST:CONFIGURE:FREQUENCY:AUTOSEARCH 1");
   $self->iOPC(5);
+  $self->iwrite(":SENSe:SPURs:SORT OFFSet");
   $self->iwrite("INIT:CONT OFF");
   $self->iwrite("INIT:IMMEDIATE");                                     #sleep(10);
   $self->iOPC(20);

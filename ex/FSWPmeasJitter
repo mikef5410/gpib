@@ -31,6 +31,12 @@ $pna->JitterIntegrationLimits( [ 25e3, 70e6 ] );
 $pna->JitterSetup();
 my $jit = $pna->JitterMeasure();
 
+my $spurs = $pna->SpurList();
+print( Dumper($spurs) );
+
+#my $pntraces=$pna->GetPnoiseTrace();
+#print(Dumper($pntraces));
+
 printf( "Jitter %g\n", $jit );
 
 exit;
