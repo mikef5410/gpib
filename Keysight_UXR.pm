@@ -230,7 +230,7 @@ sub NRZmeasureJitter {
   $wc = $self->iquery(":MTESt:FOLDing:COUNt:WAVEFORMS?") if ($hassist);
 
   my $jit = $self->iquery(":MEASure:RJDJ:ALL?");
-  print "$jit\n";
+  #print "$jit\n";
   my %results = ();
   my @res     = split( ",", $jit );
   $results{waveforms}        = $wc;
