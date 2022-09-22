@@ -153,6 +153,14 @@ sub coupleAll {
 sub JitterSetup {
   my $self = shift;
 
+  if ( !defined( $self->JitterIntegrationLimits->[1] ) ) {
+    $self->JitterIntegrationLimits( [ $self->JitterIntegrationLimits->[0], 1e9 ] );
+  }
+
+  if ( !defined( $self->JitterIntegrationLimits->[0] ) ) {
+    $self->JitterIntegrationLimits( 100, $self->JitterIntegrationLimits->[1] );
+  }
+
   $self->modeChange("PNOise");
   $self->iwrite("INIT:CONT OFF");
   $self->iwrite(
@@ -187,6 +195,7 @@ sub JitterSetup {
 
   #$self->iwrite(":CALCULATE:RANGE1:EVAL:WEIGHTING 'NONE'");
 }
+
 
 # Return RMS jitter over RANGE1
 #
