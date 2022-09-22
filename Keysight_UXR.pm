@@ -30,6 +30,7 @@ has 'scopeRJ'          => ( is => 'rw', default => sub { undef; } );
 has 'TIEfilterLimits'  => ( is => 'rw', default => sub { undef; } );    #Ref to array of Lower,Upper
 has 'TIEfilterShape'   => ( is => 'rw', default => "RECTangular" );
 has 'TIEfilterDamping' => ( is => 'rw', default => 0.707 );
+has 'jitterTimeout'    => ( is => 'rw', default => 120 );               #sec
 
 my $instrumentMethods = {
   calibrate => { scpi => "*CAL",       argtype => "NONE", queryonly => 1 },
@@ -52,6 +53,7 @@ sub init {
   $self->instrMethods($instrumentMethods);
   $self->populateAccessors();
 
+  $self->_iwrite("*CLS");
   my @errs = $self->getErrors();
 
   $self->iwrite(":SYSTEM:HEADER OFF;");
@@ -142,7 +144,11 @@ sub cdrRelock {
 
 sub cdrLocked {
   my $self = shift;
-  return ( $self->iquery(":ANALYZE:CLOCk?") );
+
+  my $chan    = $self->inputPos;
+  my $cruRate = $self->iquery( sprintf( ":MEASure:CDRrate? CHANnel%d", $chan ) );
+
+  return ( $cruRate < 200e9 );
 }
 
 ##########################################################
@@ -167,8 +173,9 @@ sub NRZjitterSetup {
 
   my $filterLim = $self->TIEfilterLimits;
 
-  $self->iwrite( sprintf( ":ANALyze:SIGNal:TYPE CHANNEL%d,NRZ",                       $chan ) );
-  $self->iwrite( sprintf( ":ANALyze:SIGNal:PATTern:PLENgth CHANNEL%d,%s",             $chan, $patt ) );
+  $self->iwrite( sprintf( ":ANALyze:SIGNal:TYPE CHANNEL%d,NRZ", $chan ) );
+  $self->iwrite(":ANALyze:AEDGes ON");
+  $self->iwrite( sprintf( ":ANALyze:SIGNal:PATTern:PLENgth CHANNEL%d,%s", $chan, $patt ) );
   $self->iwrite( sprintf( ":DISPLAY:CGRade:SCHeme TEMP;:DISPLAY:CGRade ON,CHANnel%d", $chan ) );
   $self->cdrState(1);
   $self->iwrite( sprintf( ":ACQUIRE:POINTS:ANALOG %g", int($npoints) ) );    #autoscaling will reset this
@@ -210,13 +217,20 @@ sub NRZjitterSetup {
 sub NRZmeasureJitter {
   my $self = shift;
 
+  my $timeout = 0;
+  my $maxtime = $self->jitterTimeout;
   $self->single();
   $self->clear();
   $self->iwrite(":MEASure:RJDJ:STATe ON");
   my $tstart = time;
   $self->run();
   my $wc = 1;
+
   while (1) {
+    if ( time > $tstart + $timeout ) {
+      $timeout = 1;
+      last;
+    }
     my $jits        = $self->iquery(":MEASURE:RJDJ:TJRJDJ?");
     my @jit_results = split( ",", $jits );
 
@@ -225,11 +239,13 @@ sub NRZmeasureJitter {
     sleep(5);
   }
   $self->stop();
+
   my $runtime = time - $tstart;
   my $hassist = $self->iquery(":MTEST:FOLDing?");
   $wc = $self->iquery(":MTESt:FOLDing:COUNt:WAVEFORMS?") if ($hassist);
 
   my $jit = $self->iquery(":MEASure:RJDJ:ALL?");
+
   #print "$jit\n";
   my %results = ();
   my @res     = split( ",", $jit );
@@ -242,12 +258,14 @@ sub NRZmeasureJitter {
   $results{specifiedRJ}      = $self->specifiedRJ;
   $results{scopeRJ}          = $self->scopeRJ;
 
-  for ( my $j = 0 ; $j < scalar(@res) ; $j++ ) {
-    my $name = $res[ $j++ ];
-    $name =~ s/\(.*\)//;
-    $name =~ s/\s+/_/g;
-    $results{$name} = $res[ $j++ ];
-    $results{ $name . "_state" } = $res[$j];
+  if ( !$timeout && $self->cdrLocked() ) {    #Locked?
+    for ( my $j = 0 ; $j < scalar(@res) ; $j++ ) {
+      my $name = $res[ $j++ ];
+      $name =~ s/\(.*\)//;
+      $name =~ s/\s+/_/g;
+      $results{$name} = $res[ $j++ ];
+      $results{ $name . "_state" } = $res[$j];
+    }
   }
   return ( \%results );
 }

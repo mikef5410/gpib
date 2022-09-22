@@ -865,7 +865,7 @@ sub getErrors {
   my $res     = "";
   if ( $self->EAV() ) {
     while (1) {
-      $res = $self->iquery(":SYSTem:ERRor:NEXT?");
+      $res = $self->_iquery(":SYSTem:ERRor:NEXT?");
       chomp($res);
       last if ( $res =~ /0,/ );
       push( @errlist, $res );

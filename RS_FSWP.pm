@@ -44,6 +44,8 @@ sub init {
   my $self = shift;
   $self->instrMethods($instrumentMethods);
   $self->populateAccessors();
+
+  $self->_iwrite("*CLS");
   my @errs = $self->getErrors();
   return 0              if ( $self->{VIRTUAL} );
   $self->iwrite("*RST") if ( $self->{RESET} );     #Get us to default state
@@ -217,8 +219,13 @@ sub SpurList {
   $res{DJrms_wc} = $self->iquery(":FETCh:PNOise2:SPURs:DISCrete?");    #Worst case RMS sum of DJ
   my $spurlist    = $self->iquery(":FETCh:PNOise2:SPURs?");
   my $spurJitlist = $self->iquery(":FETCh:PNOise2:SPURs:Jitter?");
-  my @spurs       = split( ",", $spurlist );
-  my @jits        = split( ",", $spurJitlist );
+  my @spurs       = ();
+  my @jits        = ();
+
+  if ( length($spurlist) ) {
+    @spurs = split( ",", $spurlist );
+    @jits  = split( ",", $spurJitlist );
+  }
   $res{Spurs}        = \@spurs;
   $res{SpurJits}     = \@jits;
   $res{CarrierLevel} = $self->iquery(":SENSe:POWer:RLEVel?");

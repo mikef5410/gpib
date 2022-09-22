@@ -25,6 +25,8 @@ with( 'GPIBWrap', 'Throwable', 'CDR' );    #Use Try::Tiny to catch my errors
 ################################################################################
 sub init {
   my $self = shift;
+
+  $self->_iwrite("*CLS");
   my @errs = $self->getErrors();
   $self->cdrInit();
 }
