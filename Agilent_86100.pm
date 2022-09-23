@@ -2707,7 +2707,7 @@ sub cdrState {
     $self->iwrite(":PTIMebase1:STATe ON;");
     $self->iwrite(":PTIMebase1:RTReference;");
     $self->iwrite(":CRECovery1:SOURce DIFFerential");
-    $self->iwrtie(":CRECovery1:LSELect:AUTomatic");
+    $self->iwrite(":CRECovery1:LSELect:AUTomatic");
     $self->iOPC(20);
     $self->iwrite(":SYSTem:AUToscale;");
     $self->iOPC(20);
