@@ -227,8 +227,9 @@ sub NRZmeasureJitter {
   my $wc = 1;
 
   while (1) {
-    if ( time > $tstart + $timeout ) {
+    if ( time > ( $tstart + $maxtime ) ) {
       $timeout = 1;
+      printf( STDERR "UXR Jitter timeout!\n" );
       last;
     }
     my $jits        = $self->iquery(":MEASURE:RJDJ:TJRJDJ?");

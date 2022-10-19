@@ -196,7 +196,6 @@ sub JitterSetup {
   #$self->iwrite(":CALCULATE:RANGE1:EVAL:WEIGHTING 'NONE'");
 }
 
-
 # Return RMS jitter over RANGE1
 #
 sub JitterMeasure {
