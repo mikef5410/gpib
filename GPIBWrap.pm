@@ -361,10 +361,14 @@ sub iquery {
     if ( $self->MAV($st) ) {    #MAV?
       return ( $self->_iread() );
     }
-    if ( $self->EAV($st) ) {    #EAV? Error queue ?
-      $self->log( $self->logsubsys . ".IOTrace" )->error( sprintf( "iquery %s: error detected.", $arg ) )
-        if ( Log::Log4perl->initialized() );
-      return (undef);
+    if ($self->InstrIOChecked()) {
+       if ( $self->EAV($st) ) {    #EAV? Error queue ?
+          $self->log( $self->logsubsys . ".IOTrace" )->error( sprintf( "iquery %s: error detected.", $arg ) )
+              if ( Log::Log4perl->initialized() );
+          my $errs = $self->getErrors();
+          print STDERR join(',',@$errs),"\n";
+          return (undef);
+       }
     }
     usleep(100000);             #100ms
     $loop-- if ($tmo);
@@ -430,8 +434,8 @@ sub iOPC {
 
     #If we get here, we timed out.
     $self->log( $self->logsubsys . ".IOTrace" )->error( shortmess("IOPC Timeout") ) if ( Log::Log4perl->initialized() );
-    my @errs = $self->getErrors();
-    $self->log( $self->logsubsys . ".IOTrace" )->warning( join( "\n", @errs ) ) if ( Log::Log4perl->initialized() );
+    my $errs = $self->getErrors();
+    $self->log( $self->logsubsys . ".IOTrace" )->warning( join( "\n", @$errs ) ) if ( Log::Log4perl->initialized() );
 
     #TimeoutError->throw( { error => 'iOPC timeout' });
     return (-1);

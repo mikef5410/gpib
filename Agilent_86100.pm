@@ -38,20 +38,20 @@ sub Reset() {
 }
 
 #86100 signals errors a little differently
-sub EAV {
-  my $self = shift;
-  my $stb  = shift || undef;
+# sub EAV {
+#   my $self = shift;
+#   my $stb  = shift || undef;
 
-  $stb = $self->ireadstb() if ( !defined($stb) );
-  if ( $stb & 1 << 5 ) {
-    $self->_iwrite("*ESR?");
-    my $esb = $self->_iread();
-    if ( $esb & 0x3C ) {
-      return (1);
-    }
-  }
-  return (0);
-}
+#   $stb = $self->ireadstb() if ( !defined($stb) );
+#   if ( $stb & 1 << 5 ) {
+#     $self->_iwrite("*ESR?");
+#     my $esb = $self->_iread();
+#     if ( $esb & 0x3C ) {
+#       return (1);
+#     }
+#   }
+#   return (0);
+# }
 
 =over 4
 
