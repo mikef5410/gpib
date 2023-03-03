@@ -216,6 +216,8 @@ sub JitterMeasure {
 sub SpurList {
   my $self = shift;
 
+  my $checked=$self->InstrIOChecked();
+  $self->InstrIOChecked(1);
   my %res = ();
   $self->iwrite("INIT:CONT ON");
   $self->iwrite(":SENSE:ADJUST:CONFIGURE:FREQUENCY:AUTOSEARCH 1");
@@ -224,19 +226,22 @@ sub SpurList {
   $self->iwrite("INIT:CONT OFF");
   $self->iwrite("INIT:IMMEDIATE");                                     #sleep(10);
   $self->iOPC(20);
-  $res{DJrms_wc} = $self->iquery(":FETCh:PNOise2:SPURs:DISCrete?");    #Worst case RMS sum of DJ
-  my $spurlist    = $self->iquery(":FETCh:PNOise2:SPURs?");
-  my $spurJitlist = $self->iquery(":FETCh:PNOise2:SPURs:Jitter?");
+  $res{DJrms_wc} = $self->iquery(":FETCh:PNO:SPURs:DISCrete?",10);    #Worst case RMS sum of DJ
+  my $spurcount   = $self->iquery(":FETCh:PNO:SPURs:COUNt?",10);
   my @spurs       = ();
   my @jits        = ();
-
-  if ( length($spurlist) ) {
-    @spurs = split( ",", $spurlist );
-    @jits  = split( ",", $spurJitlist );
+  if ($spurcount) {
+     my $spurlist    = $self->iquery(":FETCh:PNO:SPURs?",10);
+     my $spurJitlist = $self->iquery(":FETCh:PNO:SPURs:Jitter?",10);
+     if ( length($spurlist) ) {
+        @spurs = split( ",", $spurlist );
+        @jits  = split( ",", $spurJitlist );
+     }
   }
   $res{Spurs}        = \@spurs;
   $res{SpurJits}     = \@jits;
   $res{CarrierLevel} = $self->iquery(":SENSe:POWer:RLEVel?");
+  $self->InstrIOChecked($checked);
   return ( \%res );
 }
 
