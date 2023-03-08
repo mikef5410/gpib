@@ -230,7 +230,8 @@ sub SpurList {
   my $spurcount   = $self->iquery(":FETCh:PNO:SPURs:COUNt?",10);
   my @spurs       = ();
   my @jits        = ();
-  if ($spurcount) {
+  if ($spurcount>0) {
+     #printf("Getting $spurcount spurs\n");
      my $spurlist    = $self->iquery(":FETCh:PNO:SPURs?",10);
      my $spurJitlist = $self->iquery(":FETCh:PNO:SPURs:Jitter?",10);
      if ( length($spurlist) ) {
