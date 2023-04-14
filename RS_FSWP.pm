@@ -6,6 +6,7 @@ use MooseX::MakeImmutable;
 use Carp;
 use Devel::StackTrace;
 use Exception::Class ('UsageError');
+use Time::Out qw(timeout);
 ## no critic (ValuesAndExpressions::ProhibitAccessOfPrivateData)
 ## no critic (BitwiseOperators)
 #use PDL;
@@ -231,9 +232,13 @@ sub SpurList {
   my @spurs       = ();
   my @jits        = ();
   if ($spurcount>0) {
-     #printf("Getting $spurcount spurs\n");
-     my $spurlist    = $self->iquery(":FETCh:PNO:SPURs?",10);
-     my $spurJitlist = $self->iquery(":FETCh:PNO:SPURs:Jitter?",10);
+     my $spurlist;
+     my $spurJitlist;
+     printf("Getting $spurcount spurs\n");
+     timeout 40 => sub {
+        $spurlist    = $self->iquery(":FETCh:PNO:SPURs?",20);
+        $spurJitlist = $self->iquery(":FETCh:PNO:SPURs:Jitter?",20);
+     }; 
      if ( length($spurlist) ) {
         @spurs = split( ",", $spurlist );
         @jits  = split( ",", $spurJitlist );
