@@ -435,7 +435,7 @@ sub iOPC {
     #If we get here, we timed out.
     $self->log( $self->logsubsys . ".IOTrace" )->error( shortmess("IOPC Timeout") ) if ( Log::Log4perl->initialized() );
     my $errs = $self->getErrors();
-    $self->log( $self->logsubsys . ".IOTrace" )->warning( join( "\n", @$errs ) ) if ( Log::Log4perl->initialized() );
+    $self->log( $self->logsubsys . ".IOTrace" )->warn( join( "\n", @$errs ) ) if ( Log::Log4perl->initialized() );
 
     #TimeoutError->throw( { error => 'iOPC timeout' });
     return (-1);
