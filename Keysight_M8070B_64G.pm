@@ -1,5 +1,5 @@
 # -*- mode: perl -*-
-package Keysight_M8070A_64G;
+package Keysight_M8070B_64G;
 use Moose;
 use Math::Libm ':all';
 
