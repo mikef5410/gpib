@@ -16,7 +16,7 @@ has 'ERatioAutoClean'   => ( is => 'rw', isa     => 'Bool', default => 1 );
 has 'JTOLMeasurement'   => ( is => 'rw', default => undef );
 has 'JTOLAutoClean'     => ( is => 'rw', isa     => 'Bool', default => 1 );
 has 'LocationIn'        => ( is => 'rw', isa     => 'Str',  default => "M2.DataIn" );
-has 'LocationOut'       => ( is => 'rw', isa     => 'Str',  default => "M2.DataOut" );
+has 'LocationOut'       => ( is => 'rw', isa     => 'Str',  default => "M1.DataOut" );
 has 'ClockMult'         => ( is => 'rw', isa     => 'Int',  default => 2 );
 my $instrumentMethods = {
   sscGlobal      => { scpi => ":SOURCE:SSCLocking:GLOBal:STATE 'M1.System'",                   argtype => "BOOLEAN" },
