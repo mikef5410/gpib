@@ -3,7 +3,7 @@ package Agilent_N5182A;
 use Moose;
 use namespace::autoclean;
 use Time::HiRes qw(sleep usleep gettimeofday tv_interval);
-use Carp qw(cluck longmess shortmess);
+use Carp        qw(cluck longmess shortmess);
 with( 'GPIBWrap', 'Throwable' );    #Use Try::Tiny to catch my errors
 
 sub init {

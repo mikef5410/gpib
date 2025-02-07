@@ -107,7 +107,7 @@ has 'stop'            => ( is => 'ro', isa => 'Num', );
 has 'npts'            => ( is => 'ro', isa => 'Maybe[Num]', );
 has 'increment'       => ( is => 'ro', isa => 'Maybe[Num]', );
 has 'index'           => ( is => 'ro', isa => 'Int',  default => -1 );
-has '_npts_specified' => ( is => 'ro', isa => 'Bool', default => 0 );
+has '_npts_specified' => ( is => 'ro', isa => 'Bool', default =>  0 );
 
 sub BUILD {
   my $self = shift;

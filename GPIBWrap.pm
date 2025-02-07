@@ -6,9 +6,9 @@ package GPIBWrap;
 #use namespace::autoclean;
 use Moose::Role;
 use MooseX::MakeImmutable;
-use Time::HiRes qw(sleep usleep gettimeofday tv_interval);
-use Time::Out qw(timeout);
-use Carp qw(cluck longmess shortmess);
+use Time::HiRes     qw(sleep usleep gettimeofday tv_interval);
+use Time::Out       qw(timeout);
+use Carp            qw(cluck longmess shortmess);
 use Module::Runtime qw(use_module use_package_optimistically);
 use Exception::Class ( 'IOError', 'TransportError', 'TimeoutError', 'UsageError' );
 use Net::Telnet;    #For e2050Reset only
@@ -361,16 +361,16 @@ sub iquery {
     if ( $self->MAV($st) ) {    #MAV?
       return ( $self->_iread() );
     }
-    if ($self->InstrIOChecked()) {
-       if ( $self->EAV($st) ) {    #EAV? Error queue ?
-          $self->log( $self->logsubsys . ".IOTrace" )->error( sprintf( "iquery %s: error detected.", $arg ) )
-              if ( Log::Log4perl->initialized() );
-          my $errs = $self->getErrors();
-          print STDERR join(',',@$errs),"\n";
-          return (undef);
-       }
+    if ( $self->InstrIOChecked() ) {
+      if ( $self->EAV($st) ) {    #EAV? Error queue ?
+        $self->log( $self->logsubsys . ".IOTrace" )->error( sprintf( "iquery %s: error detected.", $arg ) )
+          if ( Log::Log4perl->initialized() );
+        my $errs = $self->getErrors();
+        print STDERR join( ',', @$errs ), "\n";
+        return (undef);
+      }
     }
-    usleep(100000);             #100ms
+    usleep(100000);    #100ms
     $loop-- if ($tmo);
   }
   if ( $tmo && ( $loop <= 0 ) ) {

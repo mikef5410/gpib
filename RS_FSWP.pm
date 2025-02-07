@@ -217,7 +217,7 @@ sub JitterMeasure {
 sub SpurList {
   my $self = shift;
 
-  my $checked=$self->InstrIOChecked();
+  my $checked = $self->InstrIOChecked();
   $self->InstrIOChecked(1);
   my %res = ();
   $self->iwrite("INIT:CONT ON");
@@ -225,24 +225,25 @@ sub SpurList {
   $self->iOPC(5);
   $self->iwrite(":SENSe:SPURs:SORT OFFSet");
   $self->iwrite("INIT:CONT OFF");
-  $self->iwrite("INIT:IMMEDIATE");                                     #sleep(10);
+  $self->iwrite("INIT:IMMEDIATE");                                       #sleep(10);
   $self->iOPC(20);
-  $res{DJrms_wc} = $self->iquery(":FETCh:PNO:SPURs:DISCrete?",10);    #Worst case RMS sum of DJ
-  my $spurcount   = $self->iquery(":FETCh:PNO:SPURs:COUNt?",10);
-  my @spurs       = ();
-  my @jits        = ();
-  if ($spurcount>0) {
-     my $spurlist;
-     my $spurJitlist;
-     printf("Getting $spurcount spurs\n");
-     timeout 40 => sub {
-        $spurlist    = $self->iquery(":FETCh:PNO:SPURs?",20);
-        $spurJitlist = $self->iquery(":FETCh:PNO:SPURs:Jitter?",20);
-     }; 
-     if ( length($spurlist) ) {
-        @spurs = split( ",", $spurlist );
-        @jits  = split( ",", $spurJitlist );
-     }
+  $res{DJrms_wc} = $self->iquery( ":FETCh:PNO:SPURs:DISCrete?", 10 );    #Worst case RMS sum of DJ
+  my $spurcount = $self->iquery( ":FETCh:PNO:SPURs:COUNt?", 10 );
+  my @spurs     = ();
+  my @jits      = ();
+
+  if ( $spurcount > 0 ) {
+    my $spurlist;
+    my $spurJitlist;
+    printf("Getting $spurcount spurs\n");
+    timeout 40 => sub {
+      $spurlist    = $self->iquery( ":FETCh:PNO:SPURs?",        20 );
+      $spurJitlist = $self->iquery( ":FETCh:PNO:SPURs:Jitter?", 20 );
+    };
+    if ( length($spurlist) ) {
+      @spurs = split( ",", $spurlist );
+      @jits  = split( ",", $spurJitlist );
+    }
   }
   $res{Spurs}        = \@spurs;
   $res{SpurJits}     = \@jits;

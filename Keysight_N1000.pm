@@ -3,9 +3,9 @@
 package Keysight_N1000;
 use Moose;
 use namespace::autoclean;
-use Time::HiRes qw(sleep usleep gettimeofday tv_interval);
-use Time::Out qw(timeout);
-use Carp qw(cluck longmess shortmess);
+use Time::HiRes     qw(sleep usleep gettimeofday tv_interval);
+use Time::Out       qw(timeout);
+use Carp            qw(cluck longmess shortmess);
 use Module::Runtime qw(use_module use_package_optimistically);
 use Exception::Class ( 'IOError', 'TransportError', 'TimeoutError' );
 ## no critic (ProhibitTwoArgOpen)
@@ -55,7 +55,7 @@ sub Reset() {
 
 =over 4
 
-=item B<< $instrument->XiOPC([$timeout]) >>
+=item B<< $instrument->iOPC([$timeout]) >>
 
 Very similar to *OPC?, however, if the timeout is specified (in seconds,
 fractions are ok), it'll return -1 if the timeout expires. Returns 1 when the
@@ -71,7 +71,6 @@ probably need to overload this function.
 
 =cut
 
-#Calling it XiOPC to disable this method and use the one in GPIBWrap
 sub iOPC {
   my $self    = shift;
   my $timeout = shift || $self->defaultTimeout;    #seconds (fractional ok)
@@ -79,21 +78,16 @@ sub iOPC {
   return if ( !defined($self) );
   $self->log('KeysightN1000.IOTrace')->info( sprintf( "iOPC %g", $timeout ) );
   return if ( !defined( $self->gpib ) );
-  $self->iwrite("*ESE 255\n");                     #Propagate OPC up to STB
-  $self->iwrite("*OPC?\n");                        #Tell the instrument we're interested in OPC
+  $self->iwrite("*ESE 1\n");                       #Propagate OPC up to STB
+  $self->iwrite("*OPC\n");                         #Tell the instrument we're interested in OPC
   my $tstart = [gettimeofday];
 
-  #Poll STB for ESB bit, then read ESR for OPC
+  #Poll ESR for OPC bit...
   my $pollInterval = 1.0;
   if ($timeout) {
     while ( tv_interval($tstart) <= $timeout ) {
-      my $stb = $self->ireadstb();
-
-      #$self->log('KeysightN1000.IOTrace')->info(sprintf("STB: 0x%x\n",$stb));
-      if ( $stb & (0x30) ) {    #MAV bit (4) or ESB bit (5) set?
-        my $x = $self->iread();    #$self->log('KeysightN1000.IOTrace')->info(sprintf("OPC Read: 0x%x\n",$x));
-        return (1);                #Good to go...
-      }
+      my $esr = $self->iquery("*ESR?");
+      return (1) if ( $esr & 0x1 );
       my $sleepTime = $timeout - tv_interval($tstart);
       if ( $sleepTime <= 0 ) {
         last;
@@ -151,10 +145,12 @@ sub Autoscale {
   my ($i)    = 0;       # Counter
 
   # Autoscale
-  $self->iwrite(":AUT");
-  $self->iwrite(":AUT?");
-  $self->{"auto"} = $self->iread();
-  chomp( $self->{"auto"} );
+  $self->iwrite(":SYSTEM:AUToscale");
+  $self->iOPC(10);
+
+  #$self->iwrite(":AUT?");
+  #$self->{"auto"} = $self->iread();
+  #chomp( $self->{"auto"} );
 }
 ###############################################################################
 #
@@ -165,7 +161,7 @@ sub Run {
   my ($self) = shift;
 
   # Run
-  $self->iwrite(':RUN');
+  $self->iwrite(':ACQuire:RUN');
   return 0;
 }
 ###############################################################################
@@ -177,7 +173,7 @@ sub Stop {
   my ($self) = shift;
 
   # Stop
-  $self->iwrite(":STOP");
+  $self->iwrite(":ACQuite:STOP");
 }
 ###############################################################################
 #
