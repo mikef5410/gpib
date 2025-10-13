@@ -34,10 +34,11 @@ my $instrumentMethods = {
   outputOffset   => { scpi => ":SOURCE:VOLT:OFFSET '!!LocationOut'",                           argtype => "NUMBER" },
   outputCoupling => { scpi => ":OUTPUT:COUPLING '!!LocationOut'", argtype => "ENUM", argcheck => [ 'AC',   'DC' ] },
   outputPolarity => { scpi => ":OUTPUT:POLARITY '!!LocationOut'", argtype => "ENUM", argcheck => [ 'NORM', 'INV' ] },
-  clockFreq          => { scpi => ":SOURCE:FREQ 'M1.ClkGen'",         argtype => "NUMBER" },
-  globalOutputsState => { scpi => ":OUTPUT:GLOBAL:STATE 'M1.System'", argtype => "BOOLEAN" },
-  outputState        => { scpi => ":OUTPUT:STATE '!!LocationOut'",    argtype => "BOOLEAN" },
-  deemphasisUnit     =>
+  clockFreq            => { scpi => ":SOURCE:FREQ 'M1.ClkGen'",                 argtype => "NUMBER" },
+  globalOutputsState   => { scpi => ":OUTPUT:GLOBAL:STATE 'M1.System'",         argtype => "BOOLEAN" },
+  outputState          => { scpi => ":OUTPUT:STATE '!!LocationOut'",            argtype => "BOOLEAN" },
+  outputErrorInsertion => { scpi => ":OUTPUT:EINSertion:STATE '!!LocationOut'", argtype => "BOOLEAN" },
+  deemphasisUnit       =>
     { scpi => ":OUTPUT:DEEMphasis:UNIT '!!LocationOut'", argtype => "ENUM", argcheck => [ 'DB', 'PCT' ] },
   deemphasisPre2       => { scpi => ":OUTPUT:DEEMphasis:PRECursor2 '!!LocationOut'",  argtype => "NUMBER" },
   deemphasisPre1       => { scpi => ":OUTPUT:DEEMphasis:PRECursor1 '!!LocationOut'",  argtype => "NUMBER" },
